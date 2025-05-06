@@ -1,0 +1,35 @@
+{
+    "id": "string",
+    "supplier_name": "string",
+    "supplier_slug": "string",
+    "supplier_tin": "string",
+    "items": [
+      {
+        "id": "string",
+        "name": "string",
+        "description": "string",
+        "quantity": 0,
+        "unit_price": 0.0,
+        "total_price": 0.0
+      }
+    ],
+    "total_amount": 0.0,
+    "status": "string",
+    "created_at": "2025-05-07T02:00:00Z",
+    "updated_at": "2025-05-07T03:00:00Z",
+    "created_by": "string",
+    "approved_by": "string",
+    "approval_timestamp": "2025-05-07T03:30:00Z",
+    "change_history": [
+      {
+        "changed_at": "2025-05-07T02:30:00Z",
+        "changed_by": "string",
+        "changes": {
+          "field": "status",
+          "old_value": "draft",
+          "new_value": "submitted"
+        }
+      }
+    ]
+  }
+  
