@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/sidebar"
 
   
-export default function PurchasingLayout({
+export default function SalesLayout({
     children,
   }: {
     children: React.ReactNode

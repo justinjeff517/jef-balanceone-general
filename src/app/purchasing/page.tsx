@@ -29,6 +29,8 @@ interface Purchase {
   supplier_name: string;
   supplier_slug: string;
   supplier_tin: string;
+  receipt_date: string;
+  receipt_number: string;
   items: PurchaseItem[];
   total_amount: number;
   status: string;
@@ -47,6 +49,8 @@ const purchases: Purchase[] = [
     supplier_name: 'Acme Supplies',
     supplier_slug: 'acme-supplies',
     supplier_tin: '123-456-789',
+    receipt_date: '2025-05-08',
+    receipt_number: '5001',
     items: [
       {
         id: 'item1',
@@ -92,40 +96,49 @@ export default function Page() {
     </TooltipContent>
   </Tooltip>
 </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
+<Table>
+    <TableHeader>
+        <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Receipt #</TableHead>
             <TableHead>Supplier</TableHead>
             <TableHead>Total Amount</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created At</TableHead>
             <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {purchases.map((purchase) => (
+        </TableRow>
+    </TableHeader>
+    <TableBody>
+        {purchases.map(purchase => (
             <TableRow key={purchase.id}>
-              <TableCell>{purchase.supplier_name}</TableCell>
-              <TableCell>{purchase.total_amount.toFixed(2)}</TableCell>
-              <TableCell>{purchase.status}</TableCell>
-              <TableCell>{new Date(purchase.created_at).toLocaleString()}</TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="p-1">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>View</DropdownMenuItem>
-                    <DropdownMenuItem>Modify</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
+                <TableCell>{purchase.receipt_date}</TableCell>
+                <TableCell>{purchase.receipt_number}</TableCell>
+                <TableCell>{purchase.supplier_name}</TableCell>
+                <TableCell>{purchase.total_amount.toFixed(2)}</TableCell>
+                <TableCell>{purchase.status}</TableCell>
+                <TableCell>{new Date(purchase.created_at).toLocaleString()}</TableCell>
+                <TableCell>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="p-1">
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                                <Link href={`/purchasing/purchases/${purchase.id}`}>View</Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                                <Link href={`/purchasing/purchases/${purchase.id}/edit`}>Modify</Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+        ))}
+    </TableBody>
+</Table>
+
     </div>
   );
 }
