@@ -3,6 +3,8 @@
     "branch_name": "string",
     "branch_slug": "string",
     "branch_tin": "string",
+    "receipt_date": "2025-05-08",
+    "receipt_number": "string",
     "items": [
       {
         "id": "string",

@@ -1,6 +1,6 @@
 {
     "data":{
-        "supplier_slug": "string",
+        "branch_slug": "string",
         "receipt_date": "2025-05-08",
         "receipt_number": "string",
         "items": [
@@ -13,7 +13,7 @@
             "total_price": 0.0
           }
         ],
-        "total_amount": 0.0,
+        "total_amount": 0.0
 
       }
       

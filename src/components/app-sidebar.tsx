@@ -41,21 +41,6 @@ const data = {
       title: "Purchasing",
       url: "/purchasing",
       icon: IconReceipt,
-    },
-    {
-      title: "Suppliers",
-      url: "/purchasing/suppliers",
-      icon: IconBuildings,
-    },
-    {
-      title: "Vendors",
-      url: "/purchasing/vendors",
-      icon: IconBuildings,
-    },
-    {
-      title: "Purchases",
-      url: "/purchasing/purchases",
-      icon: IconBuildings,
     }
   ],
 
