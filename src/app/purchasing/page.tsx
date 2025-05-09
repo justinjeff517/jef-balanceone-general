@@ -1,10 +1,24 @@
+"use client"
 import React from 'react';
 import Link from 'next/link';
-import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@/components/ui/table';
+import {
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Plus } from 'lucide-react';
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+
 interface PurchaseItem {
   id: string;
   name: string;
@@ -42,7 +56,7 @@ interface Purchase {
   change_history: ChangeHistory[];
 }
 
-// Dummy data for demonstration
+// Dummy data
 const purchases: Purchase[] = [
   {
     id: '1',
@@ -81,64 +95,66 @@ const purchases: Purchase[] = [
 export default function Page() {
   return (
     <div className="p-6">
-<div className="flex items-center space-x-4 mb-4">
-  <Tooltip>
-    <TooltipTrigger asChild>
-      <Button asChild variant="default" size="sm">
-        <Link href="/purchasing/suppliers">
-          <Plus className="mr-2 h-4 w-4" />
-          Supplier Purchases
-        </Link>
-      </Button>
-    </TooltipTrigger>
-    <TooltipContent>
-      Add Purchases from Suppliers
-    </TooltipContent>
-  </Tooltip>
-</div>
-<Table>
-    <TableHeader>
-        <TableRow>
+      <div className="flex items-center space-x-4 mb-4">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button size="sm">
+              <Link href="/purchasing/suppliers" className="flex items-center">
+                <Plus className="mr-2 h-4 w-4" />
+                New Purchase from Suppliers
+              </Link>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Create a new purchase record from suppliers
+          </TooltipContent>
+        </Tooltip>
+      </div>
+
+      <Table>
+        <TableHeader>
+          <TableRow>
             <TableHead>Date</TableHead>
             <TableHead>Receipt #</TableHead>
             <TableHead>Supplier</TableHead>
-            <TableHead>Total Amount</TableHead>
+            <TableHead>Total</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Created At</TableHead>
+            <TableHead>Created</TableHead>
             <TableHead>Actions</TableHead>
-        </TableRow>
-    </TableHeader>
-    <TableBody>
-        {purchases.map(purchase => (
-            <TableRow key={purchase.id}>
-                <TableCell>{purchase.receipt_date}</TableCell>
-                <TableCell>{purchase.receipt_number}</TableCell>
-                <TableCell>{purchase.supplier_name}</TableCell>
-                <TableCell>{purchase.total_amount.toFixed(2)}</TableCell>
-                <TableCell>{purchase.status}</TableCell>
-                <TableCell>{new Date(purchase.created_at).toLocaleString()}</TableCell>
-                <TableCell>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="p-1">
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                                <Link href={`/purchasing/purchases/${purchase.id}`}>View</Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                                <Link href={`/purchasing/purchases/${purchase.id}/edit`}>Modify</Link>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </TableCell>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {purchases.map((p) => (
+            <TableRow key={p.id}>
+              <TableCell>{p.receipt_date}</TableCell>
+              <TableCell>{p.receipt_number}</TableCell>
+              <TableCell>{p.supplier_name}</TableCell>
+              <TableCell>{p.total_amount.toFixed(2)}</TableCell>
+              <TableCell>{p.status}</TableCell>
+              <TableCell>
+                {new Date(p.created_at).toLocaleString()}
+              </TableCell>
+              <TableCell>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="p-1">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link href={`/purchases/${p.id}`}>View</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/purchases/${p.id}/edit`}>Modify</Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
             </TableRow>
-        ))}
-    </TableBody>
-</Table>
-
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }
