@@ -1,37 +1,177 @@
 {
-    "id": "string",
-    "supplier_name": "string",
-    "supplier_slug": "string",
-    "supplier_tin": "string",
-    "receipt_date": "2025-05-08",
-    "receipt_number": "string",
-    "items": [
-      {
-        "id": "string",
-        "name": "string",
-        "description": "string",
-        "quantity": 0,
-        "unit_price": 0.0,
-        "total_price": 0.0
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PurchaseRecord",
+  "type": "object",
+  "description": "Record of a purchase, including supplier details, line items, audit trail and electronic signature.",
+  "properties": {
+    "collection": {
+      "const": "purchase_records",
+      "description": "Identifier for the collection storing these records."
+    },
+    "record_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for the record."
+    },
+    "supplier_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Name of the supplier."
+    },
+    "supplier_slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "description": "Unique slug for the supplier (lowercase, alphanumeric, hyphens or underscores)."
+    },
+    "supplier_tin": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Tax identification number of the supplier."
+    },
+    "receipt_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the receipt (YYYY-MM-DD)."
+    },
+    "receipt_number": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique receipt number."
+    },
+    "items": {
+      "type": "array",
+      "description": "List of items in the purchase.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the item line."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Name of the purchased item."
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional description of the item."
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Quantity purchased."
+          },
+          "unit_price": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Price per unit."
+          },
+          "total_price": {
+            "type": "number",
+            "minimum": 0,
+            "description": "quantity × unit_price."
+          }
+        },
+        "required": ["id","name","quantity","unit_price","total_price"],
+        "additionalProperties": false
       }
-    ],
-    "total_amount": 0.0,
-    "status": "string",
-    "created_at": "2025-05-07T02:00:00Z",
-    "updated_at": "2025-05-07T03:00:00Z",
-    "created_by": "string",
-    "approved_by": "string",
-    "approval_timestamp": "2025-05-07T03:30:00Z",
-    "change_history": [
-      {
-        "changed_at": "2025-05-07T02:30:00Z",
-        "changed_by": "string",
-        "changes": {
-          "field": "status",
-          "old_value": "draft",
-          "new_value": "submitted"
+    },
+    "total_amount": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Sum of all item total_price values."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft","submitted","approved","paid","cancelled"],
+      "description": "Current status of the purchase."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC timestamp when the record was created."
+    },
+    "created_by": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID of the user who created the record."
+    },
+    "change_history": {
+      "type": "array",
+      "description": "History of updates to the record.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "changed_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC timestamp of the change."
+          },
+          "changed_by": {
+            "type": "string",
+            "format": "uuid",
+            "description": "UUID of the user who made the change."
+          },
+          "changes": {
+            "type": "array",
+            "description": "List of field changes.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": { "type": "string", "description": "Name of changed field." },
+                "old_value": {
+                  "oneOf":[{"type":"null"},{"type":"string"},{"type":"number"},{"type":"array"},{"type":"object"}],
+                  "description":"Value before change."
+                },
+                "new_value": {
+                  "oneOf":[{"type":"null"},{"type":"string"},{"type":"number"},{"type":"array"},{"type":"object"}],
+                  "description":"Value after change."
+                }
+              },
+              "required": ["field","old_value","new_value"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["changed_at","changed_by","changes"],
+        "additionalProperties": false
+      }
+    },
+    "e_signature": {
+      "type": "object",
+      "description": "Electronic signature for integrity and approval.",
+      "properties": {
+        "signed_by": {
+          "type": "string",
+          "format": "uuid",
+          "description": "UUID of the signer."
+        },
+        "signed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC timestamp of signature."
+        },
+        "signature_reason": {
+          "type": "string",
+          "enum": ["submission","approval","correction"],
+          "description": "Purpose of signature."
+        },
+        "signature_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{64}$",
+          "description": "SHA-256 hash of the record (excluding e_signature)."
         }
-      }
-    ]
-  }
-  
+      },
+      "required": ["signed_by","signed_at","signature_reason","signature_hash"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "collection","record_id","supplier_name","supplier_slug","supplier_tin",
+    "receipt_date","receipt_number","items","total_amount","status",
+    "created_at","created_by","change_history","e_signature"
+  ],
+  "additionalProperties": false
+}
