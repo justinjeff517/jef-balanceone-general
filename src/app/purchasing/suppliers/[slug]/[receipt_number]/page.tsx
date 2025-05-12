@@ -17,18 +17,28 @@ interface ReceiptItem {
   total_price: number;
 }
 
+interface ChangeEntry {
+  field: string;
+  old_value: string;
+  new_value: string;
+}
+
 interface ChangeHistory {
   changed_at: string;
   changed_by: string;
-  changes: {
-    field: string;
-    old_value: string;
-    new_value: string;
-  };
+  changes: ChangeEntry[];
+}
+
+interface ESignature {
+  signed_by: string;
+  signed_at: string;
+  signature_reason: 'submission' | 'approval' | 'correction';
+  signature_hash: string;
 }
 
 interface Receipt {
-  id: string;
+  collection: 'purchase_records';
+  record_id: string;
   supplier_name: string;
   supplier_slug: string;
   supplier_tin: string;
@@ -36,13 +46,14 @@ interface Receipt {
   receipt_number: string;
   items: ReceiptItem[];
   total_amount: number;
-  status: string;
+  status: 'draft' | 'submitted' | 'approved' | 'paid' | 'cancelled';
   created_at: string;
-  updated_at: string;
   created_by: string;
-  approved_by: string;
-  approval_timestamp: string;
   change_history: ChangeHistory[];
+  e_signature: ESignature;
+  summary_text: string;
+  items_summary: string;
+  last_change_summary: string;
 }
 
 export default function ReceiptPage() {
@@ -52,9 +63,9 @@ export default function ReceiptPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Replace API call with dummy data
     const dummy: Receipt = {
-      id: '1',
+      collection: 'purchase_records',
+      record_id: '550e8400-e29b-41d4-a716-446655440000',
       supplier_name: 'Acme Corporation',
       supplier_slug: 'acme-corp',
       supplier_tin: '123-456-789',
@@ -81,24 +92,31 @@ export default function ReceiptPage() {
       total_amount: 65.0,
       status: 'approved',
       created_at: '2025-05-02T09:30:00Z',
-      updated_at: '2025-05-03T14:45:00Z',
-      created_by: 'Alice',
-      approved_by: 'Bob',
-      approval_timestamp: '2025-05-03T15:00:00Z',
+      created_by: '550e8400-e29b-41d4-a716-446655440001',
       change_history: [
         {
           changed_at: '2025-05-03T15:00:00Z',
-          changed_by: 'Bob',
-          changes: {
-            field: 'status',
-            old_value: 'pending',
-            new_value: 'approved',
-          },
+          changed_by: '550e8400-e29b-41d4-a716-446655440002',
+          changes: [
+            {
+              field: 'status',
+              old_value: 'pending',
+              new_value: 'approved',
+            },
+          ],
         },
       ],
+      e_signature: {
+        signed_by: '550e8400-e29b-41d4-a716-446655440002',
+        signed_at: '2025-05-03T15:00:00Z',
+        signature_reason: 'approval',
+        signature_hash: 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+      },
+      summary_text: 'Purchased 2 × Widget A and 1 × Widget B from Acme Corporation for $65.00 on 2025-05-01.',
+      items_summary: '- Widget A (2) @ $25.00 → $50.00\n- Widget B (1) @ $15.00 → $15.00',
+      last_change_summary: 'Status changed from pending to approved by user 550e8400-e29b-41d4-a716-446655440002 on 2025-05-03T15:00:00Z.',
     };
 
-    // Simulate loading delay
     setTimeout(() => {
       setReceipt(dummy);
       setLoading(false);
@@ -151,10 +169,9 @@ export default function ReceiptPage() {
               <h3 className="font-semibold">Receipt Details</h3>
               <p>Date: {new Date(receipt.receipt_date).toLocaleDateString()}</p>
               <p>Created: {new Date(receipt.created_at).toLocaleString()}</p>
-              <p>Updated: {new Date(receipt.updated_at).toLocaleString()}</p>
               <p>Created By: {receipt.created_by}</p>
-              <p>Approved By: {receipt.approved_by}</p>
-              <p>Approval Time: {new Date(receipt.approval_timestamp).toLocaleString()}</p>
+              <p>Record ID: {receipt.record_id}</p>
+              <p>Collection: {receipt.collection}</p>
             </div>
           </div>
         </CardContent>
@@ -193,7 +210,7 @@ export default function ReceiptPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="mb-6">
         <CardHeader>
           <CardTitle>Change History</CardTitle>
         </CardHeader>
@@ -207,18 +224,31 @@ export default function ReceiptPage() {
                 <span className="font-semibold">Changed At:</span>{' '}
                 {new Date(change.changed_at).toLocaleString()}
               </p>
-              <p>
-                <span className="font-semibold">Field:</span> {change.changes.field}
-              </p>
-              <p>
-                <span className="font-semibold">Old Value:</span> {change.changes.old_value}
-              </p>
-              <p>
-                <span className="font-semibold">New Value:</span> {change.changes.new_value}
-              </p>
+              {change.changes.map((c, i) => (
+                <div key={i}>
+                  <p><span className="font-semibold">Field:</span> {c.field}</p>
+                  <p><span className="font-semibold">Old Value:</span> {c.old_value}</p>
+                  <p><span className="font-semibold">New Value:</span> {c.new_value}</p>
+                </div>
+              ))}
               {index < receipt.change_history.length - 1 && <Separator className="my-2" />}
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>E-Signature & Summaries</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p><strong>Signed By:</strong> {receipt.e_signature.signed_by}</p>
+          <p><strong>Signed At:</strong> {new Date(receipt.e_signature.signed_at).toLocaleString()}</p>
+          <p><strong>Reason:</strong> {receipt.e_signature.signature_reason}</p>
+          <Separator className="my-4" />
+          <p><strong>Summary:</strong> {receipt.summary_text}</p>
+          <p><strong>Items Summary:</strong><br/>{receipt.items_summary}</p>
+          <p><strong>Last Change Summary:</strong> {receipt.last_change_summary}</p>
         </CardContent>
       </Card>
     </div>

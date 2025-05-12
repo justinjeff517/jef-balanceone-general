@@ -1,6 +1,8 @@
 "use client";
-import React, { useState, useCallback, useMemo } from "react";
-import { useRouter, useParams } from "next/navigation";
+
+import React from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import {
   Table,
   TableHeader,
@@ -9,13 +11,18 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, Plus } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 interface SaleItem {
-  id: string;
+  id: string;               // uuid
   name: string;
   description: string;
   quantity: number;
@@ -23,256 +30,217 @@ interface SaleItem {
   total_price: number;
 }
 
-type ItemDef = Pick<SaleItem, "id" | "name" | "description" | "unit_price">;
+interface ChangeDetail {
+  field: string;
+  old_value: string;
+  new_value: string;
+}
 
-const catalog: ItemDef[] = [
-  { id: "1", name: "Wireless Headphones", description: "Bluetooth over-ear", unit_price: 59.99 },
-  { id: "2", name: "Smart Watch", description: "HR monitor", unit_price: 129.99 },
-  { id: "3", name: "Portable Speaker", description: "Waterproof, 12h battery", unit_price: 39.99 },
-  { id: "4", name: "E-Reader", description: '6" glare-free, 8GB', unit_price: 79.99 },
-  { id: "5", name: "Wireless Mouse", description: "Ergonomic, USB-C", unit_price: 24.99 },
-];
+interface ChangeHistoryEntry {
+  changed_at: string;       // date-time
+  changed_by: string;       // uuid
+  changes: ChangeDetail[];
+}
 
-type Supplier = { name: string; slug: string; tin: string };
-const dummySuppliers: Supplier[] = [
-  { name: "Alpha Supply Co.", slug: "alpha-supply", tin: "123-456-001" },
-  { name: "Bravo Traders", slug: "bravo-traders", tin: "123-456-002" },
-  { name: "Charlie Imports", slug: "charlie-imports", tin: "123-456-003" },
+interface ESignature {
+  signed_by: string;        // uuid
+  signed_at: string;        // date-time
+  signature_reason: "submission" | "approval" | "correction";
+  signature_hash: string;   // 64-hex chars
+}
+
+interface SaleRecord {
+  collection: "sales";
+  record_id: string;        // uuid
+  branch_name: string;
+  branch_slug: string;
+  branch_tin: string;
+  receipt_date: string;     // YYYY-MM-DD
+  receipt_number: string;
+  items: SaleItem[];
+  total_amount: number;
+  status: "draft" | "submitted" | "approved" | "paid" | "cancelled";
+  created_at: string;       // date-time
+  created_by: string;       // uuid
+  change_history: ChangeHistoryEntry[];
+  e_signature: ESignature;
+  summary_text: string;
+  items_summary: string;
+  last_change_summary: string;
+}
+
+// sample sales for "north-branch"
+const sales: SaleRecord[] = [
+  {
+    collection: "sales",
+    record_id: "f1e2d3c4-5678-90ab-cdef-1234567890ab",
+    branch_name: "North Branch",
+    branch_slug: "north-branch",
+    branch_tin: "987-654-321",
+    receipt_date: "2025-05-11",
+    receipt_number: "S2001",
+    items: [
+      {
+        id: "aaaabbbb-cccc-dddd-eeee-ffff00001111",
+        name: "Wireless Headphones",
+        description: "Bluetooth over-ear",
+        quantity: 3,
+        unit_price: 59.99,
+        total_price: 179.97,
+      },
+    ],
+    total_amount: 179.97,
+    status: "submitted",
+    created_at: "2025-05-11T09:00:00Z",
+    created_by: "11112222-3333-4444-5555-666677778888",
+    change_history: [
+      {
+        changed_at: "2025-05-11T09:15:00Z",
+        changed_by: "11112222-3333-4444-5555-666677778888",
+        changes: [
+          { field: "status", old_value: "draft", new_value: "submitted" },
+        ],
+      },
+    ],
+    e_signature: {
+      signed_by: "99990000-aaaa-bbbb-cccc-ddddeeeeffff",
+      signed_at: "2025-05-11T09:16:00Z",
+      signature_reason: "submission",
+      signature_hash:
+        "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+    },
+    summary_text:
+      "North Branch sold 3 Wireless Headphones on 2025-05-11 for a total of $179.97.",
+    items_summary: "- 3 × Wireless Headphones @ $59.99 each = $179.97",
+    last_change_summary:
+      "Status changed from draft to submitted at 2025-05-11T09:15:00Z.",
+  },
+  {
+    collection: "sales",
+    record_id: "01234567-89ab-cdef-0123-456789abcdef",
+    branch_name: "North Branch",
+    branch_slug: "north-branch",
+    branch_tin: "987-654-321",
+    receipt_date: "2025-05-12",
+    receipt_number: "S2002",
+    items: [
+      {
+        id: "22223333-4444-5555-6666-777788889999",
+        name: "Portable Speaker",
+        description: "Waterproof, 12h battery",
+        quantity: 2,
+        unit_price: 39.99,
+        total_price: 79.98,
+      },
+    ],
+    total_amount: 79.98,
+    status: "draft",
+    created_at: "2025-05-12T10:30:00Z",
+    created_by: "11112222-3333-4444-5555-666677778888",
+    change_history: [],
+    e_signature: {
+      signed_by: "99990000-aaaa-bbbb-cccc-ddddeeeeffff",
+      signed_at: "2025-05-12T10:31:00Z",
+      signature_reason: "correction",
+      signature_hash:
+        "fedcbafedcbafedcbafedcbafedcbafedcbafedcbafedcbafedcbafedcbafe",
+    },
+    summary_text:
+      "Draft sale of 2 Portable Speakers on 2025-05-12 totaling $79.98.",
+    items_summary: "- 2 × Portable Speaker @ $39.99 each = $79.98",
+    last_change_summary: "No changes yet.",
+  },
 ];
 
 export default function Page() {
-  const router = useRouter();
-  const params = useParams();
-  const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug || "";
-  const supplier = useMemo(
-    () => dummySuppliers.find((s) => s.slug === slug) || { name: slug, slug, tin: "" },
-    [slug]
-  );
-
-  const [itemMap, setItemMap] = useState<Map<string, SaleItem>>(() => new Map());
-  const [saleDate, setSaleDate] = useState("");
-  const [saleNumber, setSaleNumber] = useState("");
-  const [touched, setTouched] = useState({ saleDate: false, saleNumber: false });
-  const [loading, setLoading] = useState(false);
-
-  const isDateValid = useMemo(() => {
-    if (!saleDate) return false;
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(saleDate)) return false;
-    const date = new Date(saleDate);
-    return !isNaN(date.getTime()) && date.toISOString().startsWith(saleDate);
-  }, [saleDate]);
-
-  const isNumberValid = useMemo(() => /^\d+$/.test(saleNumber), [saleNumber]);
-  const items = useMemo(() => Array.from(itemMap.values()), [itemMap]);
-  const total = useMemo(() => items.reduce((sum, it) => sum + it.total_price, 0), [items]);
-  const isFormValid = isDateValid && isNumberValid && items.length > 0 && saleNumber !== "";
-
-  const addItem = useCallback((def: ItemDef) => {
-    setItemMap((prev) => {
-      const m = new Map(prev);
-      const existing = m.get(def.id);
-      if (existing) {
-        const qty = existing.quantity + 1;
-        m.set(def.id, { ...existing, quantity: qty, total_price: +(qty * def.unit_price).toFixed(2) });
-      } else {
-        m.set(def.id, {
-          id: def.id,
-          name: def.name,
-          description: def.description,
-          unit_price: def.unit_price,
-          quantity: 1,
-          total_price: +def.unit_price.toFixed(2),
-        });
-      }
-      return m;
-    });
-  }, []);
-
-  const removeItem = useCallback((id: string) => {
-    setItemMap((prev) => {
-      const m = new Map(prev);
-      m.delete(id);
-      return m;
-    });
-  }, []);
-
-  const updateQuantity = useCallback((id: string, qty: number) => {
-    setItemMap((prev) => {
-      const m = new Map(prev);
-      const existing = m.get(id);
-      if (!existing) return m;
-      const newQty = Math.max(1, isNaN(qty) ? 1 : qty);
-      m.set(id, { ...existing, quantity: newQty, total_price: +(newQty * existing.unit_price).toFixed(2) });
-      return m;
-    });
-  }, []);
-
-  const available = useMemo(() => catalog.filter((d) => !itemMap.has(d.id)), [itemMap]);
-
-  const handleSubmit = async () => {
-    if (!isFormValid) return;
-    setLoading(true);
-    try {
-      const payload = {
-        data: {
-          supplier_name: supplier.name,
-          supplier_slug: supplier.slug,
-          supplier_tin: supplier.tin,
-          sale_date: saleDate,
-          sale_number: saleNumber,
-          items: items.map(({ id, name, description, quantity, unit_price, total_price }) => ({
-            id,
-            name,
-            description,
-            quantity,
-            unit_price,
-            total_price,
-          })),
-          total_amount: total,
-        },
-      };
-      console.log(JSON.stringify(payload, null, 2));
-      // Simulate API call (replace with actual API call if needed)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      router.push("/sales");
-    } catch (error) {
-      console.error("Submission failed:", error);
-      setLoading(false);
-    }
-  };
+  const { slug } = useParams();
+  const branchName = sales[0]?.branch_name ?? slug;
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-4">Sale for {supplier.name}</h1>
-      <p className="mb-6 text-sm text-gray-600">TIN: {supplier.tin}</p>
+    <div className="p-6">
+      <div className="flex items-center space-x-4 mb-4">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button asChild variant="default" size="sm">
+              <Link href={`/sales/branches/${slug}/add`}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Sale
+              </Link>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Add a sale for {branchName}</TooltipContent>
+        </Tooltip>
 
-      <section>
-        <h2 className="text-xl font-semibold mb-4">Add Items</h2>
-        {available.length === 0 ? (
-          <p>All items added.</p>
-        ) : (
-          <div className="space-y-2">
-            {available.map((d) => (
-              <Card key={d.id}>
-                <CardContent className="flex items-center p-2 space-x-3 overflow-hidden">
-                  <Button size="sm" onClick={() => addItem(d)} className="flex-shrink-0">
-                    Add
-                  </Button>
-                  <span className="font-medium flex-shrink-0 whitespace-nowrap">{d.name}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-500 truncate">{d.description}</p>
-                  </div>
-                  <span className="text-sm font-semibold flex-shrink-0 whitespace-nowrap">
-                    ${d.unit_price.toFixed(2)}
-                  </span>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/sales/branches/${slug}/configure`}>
+                Configure
+              </Link>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Configure for {branchName}</TooltipContent>
+        </Tooltip>
+      </div>
 
-      <section className="mt-10">
-        <h2 className="text-xl font-semibold mb-4">Sale Items ({items.length})</h2>
-        {items.length === 0 ? (
-          <p>No items in this sale.</p>
-        ) : (
-          <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Unit Price</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((it) => (
-                  <TableRow key={it.id}>
-                    <TableCell>{it.name}</TableCell>
-                    <TableCell>${it.unit_price.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        value={it.quantity}
-                        min={1}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value, 10);
-                          updateQuantity(it.id, value);
-                        }}
-                        className="w-20"
-                      />
-                    </TableCell>
-                    <TableCell>${it.total_price.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => removeItem(it.id)}>
-                        <Trash2 className="h-4 w-4" />
+      <h2 className="text-2xl font-semibold mb-4">
+        Sales for {branchName}
+      </h2>
+
+      {sales.length === 0 ? (
+        <p>No sales found for {branchName}.</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Receipt #</TableHead>
+              <TableHead>Total</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Created At</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sales.map((s) => (
+              <TableRow key={s.record_id}>
+                <TableCell>{s.receipt_date}</TableCell>
+                <TableCell>{s.receipt_number}</TableCell>
+                <TableCell>${s.total_amount.toFixed(2)}</TableCell>
+                <TableCell>{s.status}</TableCell>
+                <TableCell>
+                  {new Date(s.created_at).toLocaleString()}
+                </TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <div className="text-right font-semibold mt-4">Total: ${total.toFixed(2)}</div>
-          </>
-        )}
-      </section>
-
-      <div className="mt-10 mb-4">
-        <label htmlFor="saleDate" className="block mb-1 font-medium">
-          Sale Date (YYYY-MM-DD)
-        </label>
-        <Input
-          id="saleDate"
-          type="text"
-          placeholder="2025-05-08"
-          value={saleDate}
-          onChange={(e) => setSaleDate(e.target.value)}
-          onBlur={() => setTouched((prev) => ({ ...prev, saleDate: true }))}
-          className="max-w-xs"
-          aria-describedby={touched.saleDate && !isDateValid ? "saleDateError" : undefined}
-        />
-        {touched.saleDate && !isDateValid && (
-          <p id="saleDateError" className="text-red-500 text-sm mt-1">
-            Invalid date or format.
-          </p>
-        )}
-      </div>
-
-      <div className="mb-6">
-        <label htmlFor="saleNumber" className="block mb-1 font-medium">
-          Sale Number
-        </label>
-        <Input
-          id="saleNumber"
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]+"
-          placeholder="12345"
-          value={saleNumber}
-          onChange={(e) => {
-            const value = e.target.value.replace(/\D/g, "");
-            setSaleNumber(value);
-          }}
-          onBlur={() => setTouched((prev) => ({ ...prev, saleNumber: true }))}
-          className="max-w-xs"
-          aria-describedby={touched.saleNumber && !isNumberValid ? "saleNumberError" : undefined}
-        />
-        {touched.saleNumber && !isNumberValid && (
-          <p id="saleNumberError" className="text-red-500 text-sm mt-1">
-            Please enter a valid numeric value.
-          </p>
-        )}
-      </div>
-
-      <div className="mt-6 text-right">
-        <Button onClick={handleSubmit} disabled={loading || !isFormValid}>
-          {loading ? "Submitting..." : "Submit"}
-        </Button>
-      </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href={`/sales/branches/${slug}/${s.receipt_number}`}
+                        >
+                          View
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href={`/sales/branches/${slug}/${s.receipt_number}/modify`}
+                        >
+                          Modify
+                        </Link>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </div>
   );
 }
