@@ -1,0 +1,118 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Supplier",
+  "type": "object",
+  "description": "Master record for a supplier, including contact, bank details, audit trail, and electronic signature.",
+  "properties": {
+    "collection": {
+      "const": "suppliers"
+    },
+    "supplier_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "tin": {
+      "type": "string",
+      "minLength": 1
+    },
+    "address": {
+      "type": "object",
+      "properties": {
+        "street": { "type": "string" },
+        "city": { "type": "string" },
+        "region": { "type": "string" },
+        "postal_code": { "type": "string" },
+        "country": { "type": "string" }
+      },
+      "required": ["street","city","country"],
+      "additionalProperties": false
+    },
+    "contact": {
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string", "minLength": 7 }
+      },
+      "required": ["email"],
+      "additionalProperties": false
+    },
+    "bank_details": {
+      "type": "object",
+      "properties": {
+        "bank_name": { "type": "string" },
+        "account_name": { "type": "string" },
+        "account_number": { "type": "string" }
+      },
+      "required": ["bank_name","account_name","account_number"],
+      "additionalProperties": false
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "created_by": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "change_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "changed_at": { "type": "string", "format": "date-time" },
+          "changed_by": { "type": "string", "format": "uuid" },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": { "type": "string" },
+                "old_value": { "type": "string" },
+                "new_value": { "type": "string" }
+              },
+              "required": ["field","old_value","new_value"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["changed_at","changed_by","changes"],
+        "additionalProperties": false
+      }
+    },
+    "e_signature": {
+      "type": "object",
+      "properties": {
+        "signed_by": { "type": "string", "format": "uuid" },
+        "signed_at": { "type": "string", "format": "date-time" },
+        "signature_reason": {
+          "type": "string",
+          "enum": ["creation","update"]
+        },
+        "signature_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{64}$"
+        }
+      },
+      "required": ["signed_by","signed_at","signature_reason","signature_hash"],
+      "additionalProperties": false
+    },
+    "summary_text": {
+      "type": "string",
+      "description": "Natural-language summary for vector embedding"
+    }
+  },
+  "required": [
+    "collection","supplier_id","name","slug","tin",
+    "address","contact","bank_details",
+    "created_at","created_by","change_history","e_signature","summary_text"
+  ],
+  "additionalProperties": false
+}

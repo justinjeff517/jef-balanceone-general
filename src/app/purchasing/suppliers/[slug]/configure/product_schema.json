@@ -1,0 +1,117 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Product",
+  "type": "object",
+  "description": "A product definition with audit trail and e-signature support.",
+  "properties": {
+    "collection": {
+      "const": "products"
+    },
+    "product_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string",
+      "description": "e.g. piece, box, kg, liter"
+    },
+    "unit_price": {
+      "type": "number",
+      "minimum": 0
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "created_by": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_by": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "change_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "changed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "changed_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": { "type": "string" },
+                "old_value": { "type": "string" },
+                "new_value": { "type": "string" }
+              },
+              "required": ["field", "old_value", "new_value"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["changed_at", "changed_by", "changes"],
+        "additionalProperties": false
+      }
+    },
+    "e_signature": {
+      "type": "object",
+      "properties": {
+        "signed_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "signed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "signature_reason": {
+          "type": "string",
+          "enum": ["creation", "update", "deactivation"]
+        },
+        "signature_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{64}$"
+        }
+      },
+      "required": ["signed_by", "signed_at", "signature_reason", "signature_hash"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "collection", "product_id", "name", "slug", "unit", "unit_price",
+    "created_at", "created_by", "updated_at", "updated_by",
+    "change_history", "e_signature"
+  ],
+  "additionalProperties": false
+}
