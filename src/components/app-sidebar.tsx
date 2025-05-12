@@ -10,7 +10,7 @@ import {
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
-
+import { NavUser } from "./nav-user"
 import {
   Sidebar,
   SidebarContent,
@@ -18,6 +18,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter
 } from "@/components/ui/sidebar"
 
 const data = {
@@ -70,6 +71,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={data.navMain} />
     
       </SidebarContent>
+        <SidebarFooter>
+        <NavUser/>
+      </SidebarFooter>
 
     </Sidebar>
   )

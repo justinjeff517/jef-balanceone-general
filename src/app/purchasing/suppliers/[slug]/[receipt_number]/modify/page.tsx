@@ -1,6 +1,8 @@
 "use client";
+import { useSession } from "next-auth/react";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { v4 as uuidv4 } from "uuid";
 import {
   Table,
   TableHeader,
@@ -30,11 +32,11 @@ interface PurchaseItem {
 }
 
 type ItemDef = Pick<PurchaseItem, "id" | "name" | "description" | "unit_price">;
+
 const catalog: ItemDef[] = [
-  { id: "1", name: "Widget", description: "Blue widget",       unit_price: 10 },
-  { id: "2", name: "Gadget", description: "Red gadget",       unit_price: 15 },
+  { id: "1", name: "Widget", description: "Blue widget", unit_price: 10 },
+  { id: "2", name: "Gadget", description: "Red gadget", unit_price: 15 },
   { id: "3", name: "Doohickey", description: "Green doohickey", unit_price: 7.5 },
-  // …extend as needed…
 ];
 
 interface Purchase {
@@ -43,7 +45,6 @@ interface Purchase {
   items: PurchaseItem[];
 }
 
-// simulate fetch
 const dummyPurchases: Purchase[] = [
   {
     receipt_number: "1001",
@@ -52,42 +53,53 @@ const dummyPurchases: Purchase[] = [
       { id: "1", name: "Widget", description: "Blue widget", unit_price: 10, quantity: 2, total_price: 20 },
     ],
   },
-  // …
+  {
+    receipt_number: "1002",
+    receipt_date: "2025-05-02",
+    items: [
+      { id: "2", name: "Gadget", description: "Red gadget", unit_price: 15, quantity: 1, total_price: 15 },
+    ],
+  },
 ];
 
-export default function EditPurchasePage() {
+export default function EditPurchasePage(): JSX.Element {
+  const { data: session, status } = useSession();
   const router = useRouter();
-  const { receipt_number } = useParams() as { receipt_number: string };
-  const purchase = useMemo(
-    () => dummyPurchases.find((p) => p.receipt_number === receipt_number),
-    [receipt_number]
-  );
+  const params = useParams() as { slug: string; receipt_number: string };
+  const supplierSlug = params.slug;
+  const receiptNumber = params.receipt_number;
 
   const [receiptDate, setReceiptDate] = useState("");
   const [itemMap, setItemMap] = useState<Map<string, PurchaseItem>>(new Map());
-  const [loading, setLoading] = useState(false);
 
-  // initialize form
   useEffect(() => {
-    if (!purchase) return;
-    setReceiptDate(purchase.receipt_date);
-    const m = new Map<string, PurchaseItem>();
-    purchase.items.forEach((it) => m.set(it.id, { ...it }));
-    setItemMap(m);
-  }, [purchase]);
+    async function fetchPurchase() {
+      try {
+        const res = await fetch(`/api/purchases/${receiptNumber}`);
+        if (!res.ok) throw new Error(`Error ${res.status}`);
+        const data: Purchase = await res.json();
+        initializeForm(data);
+      } catch {
+        const fallback = dummyPurchases.find(p => p.receipt_number === receiptNumber);
+        if (fallback) initializeForm(fallback);
+      }
+    }
+    function initializeForm(data: Purchase) {
+      setReceiptDate(data.receipt_date);
+      const m = new Map<string, PurchaseItem>();
+      data.items.forEach(it => m.set(it.id, { ...it }));
+      setItemMap(m);
+    }
+    fetchPurchase();
+  }, [receiptNumber]);
 
-  // add-item callback
   const addItem = useCallback((def: ItemDef) => {
-    setItemMap((prev) => {
+    setItemMap(prev => {
       const m = new Map(prev);
       const ex = m.get(def.id);
       if (ex) {
         const qty = ex.quantity + 1;
-        m.set(def.id, {
-          ...ex,
-          quantity: qty,
-          total_price: +(qty * ex.unit_price).toFixed(2),
-        });
+        m.set(def.id, { ...ex, quantity: qty, total_price: +(qty * ex.unit_price).toFixed(2) });
       } else {
         m.set(def.id, {
           id: def.id,
@@ -103,7 +115,7 @@ export default function EditPurchasePage() {
   }, []);
 
   const removeItem = useCallback((id: string) => {
-    setItemMap((prev) => {
+    setItemMap(prev => {
       const m = new Map(prev);
       m.delete(id);
       return m;
@@ -111,16 +123,12 @@ export default function EditPurchasePage() {
   }, []);
 
   const updateQuantity = useCallback((id: string, qty: number) => {
-    setItemMap((prev) => {
+    setItemMap(prev => {
       const m = new Map(prev);
       const ex = m.get(id);
       if (!ex) return m;
       const newQty = qty > 0 ? qty : 1;
-      m.set(id, {
-        ...ex,
-        quantity: newQty,
-        total_price: +(newQty * ex.unit_price).toFixed(2),
-      });
+      m.set(id, { ...ex, quantity: newQty, total_price: +(newQty * ex.unit_price).toFixed(2) });
       return m;
     });
   }, []);
@@ -128,50 +136,70 @@ export default function EditPurchasePage() {
   const items = useMemo(() => Array.from(itemMap.values()), [itemMap]);
   const total = useMemo(() => items.reduce((s, it) => s + it.total_price, 0), [items]);
   const isDateValid = /^\d{4}-\d{2}-\d{2}$/.test(receiptDate);
-  const available = useMemo(() => catalog.filter((d) => !itemMap.has(d.id)), [itemMap]);
+  const available = useMemo(() => catalog.filter(d => !itemMap.has(d.id)), [itemMap]);
+
+  if (status === "loading") {
+    return <div>Loading...</div>;
+  }
+  if (status !== "authenticated" || !session) {
+    return <div>You must be signed in to edit purchases.</div>;
+  }
+  const userId = session.user.id;
+  const userName = session.user.name;
 
   const handleSave = () => {
     if (!isDateValid) return;
-    setLoading(true);
+    const recordId = uuidv4();
+    const now = new Date().toISOString();
     const payload = {
-      receipt_number,
+      collection: "purchase_records",
+      record_id: recordId,
+      supplier_name: supplierSlug.replace(/-/g, " "),
+      supplier_slug: supplierSlug,
       receipt_date: receiptDate,
-      items: items.map((it) => ({
+      receipt_number: receiptNumber,
+      items: items.map(it => ({
         id: it.id,
         name: it.name,
         description: it.description,
-        quantity: it.quantity,
         unit_price: it.unit_price,
+        quantity: it.quantity,
         total_price: it.total_price,
       })),
       total_amount: total,
+      status: "draft",
+      created_at: now,
+      created_by: userName,
+      change_history: [] as any[],
+      e_signature: {
+        signed_by: userId,
+        signed_at: now,
+        signature_reason: "submission",
+        signature_hash: "".padStart(64, "0"),
+      },
     };
-    console.log("Saving:", JSON.stringify(payload, null, 2));
-    router.push("/purchasing");
+    console.log("Saving purchase payload:", JSON.stringify(payload, null, 2));
+    // TODO: replace with actual API call:
+    // fetch('/api/purchases', { method: 'POST', body: JSON.stringify(payload) })
   };
-
-  if (!purchase) {
-    return <div className="p-6">Purchase #{receipt_number} not found.</div>;
-  }
 
   return (
     <div className="max-w-4xl mx-auto p-6">
       <Card>
         <CardHeader>
-          <CardTitle>Edit Purchase #{receipt_number}</CardTitle>
-          <p className="text-sm text-gray-600">Receipt Number (read-only)</p>
+          <CardTitle>Edit Purchase #{receiptNumber}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="mb-6">
             <label className="block mb-1 font-medium">Receipt Number</label>
-            <Input type="text" value={receipt_number} disabled className="max-w-xs" />
+            <Input type="text" value={receiptNumber} disabled className="max-w-xs" />
           </div>
           <div className="mb-6">
             <label className="block mb-1 font-medium">Receipt Date (YYYY-MM-DD)</label>
             <Input
               type="text"
               value={receiptDate}
-              onChange={(e) => setReceiptDate(e.target.value)}
+              onChange={e => setReceiptDate(e.target.value)}
               className="max-w-xs"
             />
             {receiptDate && !isDateValid && (
@@ -179,13 +207,12 @@ export default function EditPurchasePage() {
             )}
           </div>
 
-          {/* ── Add Items ── */}
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Add Items</h2>
             {available.length === 0 ? (
               <p>All catalog items added.</p>
             ) : (
-              available.map((d) => (
+              available.map(d => (
                 <Card key={d.id} className="mb-2">
                   <CardContent className="flex items-center p-2 space-x-3">
                     <Button size="sm" onClick={() => addItem(d)}>Add</Button>
@@ -200,7 +227,6 @@ export default function EditPurchasePage() {
             )}
           </section>
 
-          {/* ── Existing Items ── */}
           <h2 className="text-xl font-semibold mb-4">Items ({items.length})</h2>
           {items.length === 0 ? (
             <p>No items in this purchase.</p>
@@ -216,7 +242,7 @@ export default function EditPurchasePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((it) => (
+                {items.map(it => (
                   <TableRow key={it.id}>
                     <TableCell>{it.name}</TableCell>
                     <TableCell>${it.unit_price.toFixed(2)}</TableCell>
@@ -225,9 +251,7 @@ export default function EditPurchasePage() {
                         type="number"
                         min={1}
                         value={it.quantity}
-                        onChange={(e) =>
-                          updateQuantity(it.id, parseInt(e.target.value, 10) || 1)
-                        }
+                        onChange={e => updateQuantity(it.id, parseInt(e.target.value, 10) || 1)}
                         className="w-20"
                       />
                     </TableCell>
@@ -245,12 +269,9 @@ export default function EditPurchasePage() {
 
           <div className="text-right font-semibold mt-4">Total: ${total.toFixed(2)}</div>
         </CardContent>
-
         <CardFooter className="flex justify-end space-x-2">
           <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
-          <Button onClick={handleSave} disabled={loading || !isDateValid}>
-            {loading ? "Saving…" : "Save Changes"}
-          </Button>
+          <Button onClick={handleSave} disabled={!isDateValid}>Save Changes</Button>
         </CardFooter>
       </Card>
     </div>
