@@ -11,7 +11,6 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(creds) {
-        // only this pair will succeed
         if (creds?.username === "test" && creds?.password === "test123") {
           return { id: "1", name: "Test User", email: "test@example.com" }
         }
@@ -23,11 +22,31 @@ export const authOptions = {
       clientSecret: process.env.GITHUB_SECRET,
     }),
   ],
-  session: { strategy: "jwt" },
+
+  session: {
+    strategy: "jwt",
+    maxAge: 60 * 20, // 20 minutes
+    updateAge: 0,    // no auto-refresh
+  },
+
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.id = user.id
+      const now = Math.floor(Date.now() / 1000)
+
+      if (user) {
+        token.id = user.id
+        token.iat = now
+        token.exp = now + 60 * 20
+      }
+
+      if (token.exp && now > token.exp) return {}
+
       return token
+    },
+
+    async session({ session, token }) {
+      session.user.id = token.id
+      return session
     },
   },
 }

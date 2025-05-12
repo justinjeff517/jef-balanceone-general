@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useCallback, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { v4 as uuidv4 } from "uuid";
 import {
     Table,
     TableHeader,
@@ -18,7 +20,8 @@ import {
   CardTitle,
   CardContent,
   CardFooter,
-} from '@/components/ui/card'
+} from '@/components/ui/card';
+
 interface PurchaseItem {
     id: string;
     name: string;
@@ -47,6 +50,8 @@ const dummySuppliers: Supplier[] = [
 export default function Page() {
     const router = useRouter();
     const params = useParams();
+    const { data: session } = useSession();
+
     const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug || "";
     const supplier = useMemo(
         () => dummySuppliers.find((s) => s.slug === slug) || { name: slug, slug, tin: "" },
@@ -58,25 +63,19 @@ export default function Page() {
     const [receiptNumber, setReceiptNumber] = useState<string>("");
     const [loading, setLoading] = useState(false);
 
-    // Validation for date
     const isDateValid = useMemo(() => {
         if (!receiptDate) return false;
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
         if (!dateRegex.test(receiptDate)) return false;
         const [year, month, day] = receiptDate.split('-').map(Number);
-        const date = new Date(year, month - 1, day);
-        return (
-            !isNaN(date.getTime()) &&
-            date.getFullYear() === year &&
-            date.getMonth() === month - 1 &&
-            date.getDate() === day
-        );
+        const d = new Date(year, month - 1, day);
+        return !isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day;
     }, [receiptDate]);
 
     const isNumberValid = receiptNumber.trim() !== "";
     const items = useMemo(() => Array.from(itemMap.values()), [itemMap]);
     const total = useMemo(() => items.reduce((sum, it) => sum + it.total_price, 0), [items]);
-    const isFormValid = isDateValid && isNumberValid && items.length > 0;
+    const isFormValid = isDateValid && isNumberValid && items.length > 0 && !!session?.user?.id;
 
     const addItem = useCallback((def: ItemDef) => {
         setItemMap((prev) => {
@@ -128,55 +127,75 @@ export default function Page() {
 
     const available = useMemo(() => catalog.filter((d) => !itemMap.has(d.id)), [itemMap]);
 
-    const handleSubmit = () => {
+    const handleSubmit = useCallback(async () => {
         if (!isFormValid) return;
         setLoading(true);
+
+        const now = new Date().toISOString();
+        const baseRecord = {
+            collection: "purchase_records",
+            record_id: uuidv4(),
+            supplier_name: supplier.name,
+            supplier_slug: supplier.slug,
+            supplier_tin: supplier.tin,
+            receipt_date: receiptDate,
+            receipt_number: receiptNumber,
+            items: items.map(it => ({
+                id: it.id,
+                name: it.name,
+                description: it.description,
+                quantity: it.quantity,
+                unit_price: it.unit_price,
+                total_price: it.total_price,
+            })),
+            total_amount: total,
+            status: "submitted" as const,
+            created_at: now,
+            created_by: session!.user!.id,
+            change_history: [] as any[],
+        };
+
+        // SHA-256 hash of the record (excluding e_signature)
+        const encoder = new TextEncoder();
+        const data = encoder.encode(JSON.stringify(baseRecord));
+        const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const signature_hash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
         const payload = {
-            data: {
-                supplier_name:   supplier.name,
-                supplier_slug:   supplier.slug,
-                supplier_tin:    supplier.tin,
-                receipt_date:    receiptDate,
-                receipt_number:  receiptNumber,
-                items:           items.map((it) => ({
-                    id: it.id,
-                    name: it.name,
-                    description: it.description,
-                    quantity: it.quantity,
-                    unit_price: it.unit_price,
-                    total_price: it.total_price,
-                })),
-                total_amount: total,
+            ...baseRecord,
+            e_signature: {
+                signed_by: session!.user!.id,
+                signed_at: now,
+                signature_reason: "submission" as const,
+                signature_hash,
             },
         };
+
         console.log(JSON.stringify(payload, null, 2));
+        // TODO: POST payload to your API endpoint
         router.push("/purchasing");
-    };
+    }, [isFormValid, session, supplier, receiptDate, receiptNumber, items, total, router]);
 
     return (
         <div className="max-w-6xl mx-auto p-6">
-    <Card>
-      <CardHeader>
-        <CardTitle>Purchase for {supplier.name}</CardTitle>
-        <p className="text-sm text-gray-600">TIN: {supplier.tin}</p>
-      </CardHeader>
+            <Card>
+              <CardHeader>
+                <CardTitle>Purchase for {supplier.name}</CardTitle>
+                <p className="text-sm text-gray-600">TIN: {supplier.tin}</p>
+              </CardHeader>
+              <CardContent />
+              <CardFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => router.push(`/purchasing/suppliers/${supplier.slug}/configure`)}
+                >
+                  Configure
+                </Button>
+              </CardFooter>
+            </Card>
 
-      <CardContent>
-        {/* any additional content here */}
-      </CardContent>
-
-      <CardFooter>
-        <Button
-          variant="outline"
-          onClick={() =>
-            router.push(`/purchasing/suppliers/${supplier.slug}/configure`)
-          }
-        >
-          Configure
-        </Button>
-      </CardFooter>
-    </Card>
-            <section>
+            <section className="mt-8">
                 <h2 className="text-xl font-semibold mb-4">Add Items</h2>
                 {available.length === 0 ? (
                     <p>All catalog items added.</p>
@@ -232,9 +251,7 @@ export default function Page() {
                                                 type="number"
                                                 value={it.quantity}
                                                 min={1}
-                                                onChange={(e) =>
-                                                    updateQuantity(it.id, parseInt(e.target.value, 10) || 1)
-                                                }
+                                                onChange={(e) => updateQuantity(it.id, parseInt(e.target.value, 10) || 1)}
                                                 className="w-20"
                                             />
                                         </TableCell>
@@ -268,20 +285,20 @@ export default function Page() {
             </div>
 
             <div className="mb-6">
-            <label className="block mb-1 font-medium">Receipt Number</label>
-              <Input
-              type="number"
-              value={receiptNumber}
-              onChange={e => setReceiptNumber(e.target.value)}
-              className="max-w-xs"
-              />
-              {receiptNumber && !isNumberValid && (
-              <p className="text-red-500 text-sm mt-1">Must be numeric.</p>
-              )}
+                <label className="block mb-1 font-medium">Receipt Number</label>
+                <Input
+                    type="text"
+                    value={receiptNumber}
+                    onChange={e => setReceiptNumber(e.target.value)}
+                    className="max-w-xs"
+                />
+                {receiptNumber && !isNumberValid && (
+                    <p className="text-red-500 text-sm mt-1">Cannot be empty.</p>
+                )}
             </div>
 
             <div className="mt-6 text-right">
-                <Button onClick={handleSubmit} disabled={loading || !isFormValid}>
+                <Button onClick={() => void handleSubmit()} disabled={loading || !isFormValid}>
                     {loading ? "Submitting..." : "Submit"}
                 </Button>
             </div>
