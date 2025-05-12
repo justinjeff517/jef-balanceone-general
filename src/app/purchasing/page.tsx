@@ -179,7 +179,7 @@ export default function Page() {
             <TableHead>Total</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created</TableHead>
-            <TableHead>Actions</TableHead>
+
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -193,23 +193,7 @@ export default function Page() {
               <TableCell>
                 {new Date(p.created_at).toLocaleString()}
               </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="p-1">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link href={`/purchases/${p.id}`}>View</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href={`/purchases/${p.id}/edit`}>Modify</Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
+          
             </TableRow>
           ))}
         </TableBody>
