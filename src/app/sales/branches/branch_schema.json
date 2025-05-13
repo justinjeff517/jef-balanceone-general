@@ -14,37 +14,32 @@
           "type": "string",
           "pattern": "^[a-z0-9_-]+$"
         },
-        "description": {
-          "type": "string"
-        },
-        "category": {
-          "type": "string"
-        },
-        "unit": {
+        "tin": {
           "type": "string",
-          "description": "e.g. piece, box, kg, liter"
+          "minLength": 1
         },
-        "unit_price": {
-          "type": "number",
-          "minimum": 0
+        "address": {
+            "type":"string"
         },
-        "active": {
-          "type": "boolean",
-          "default": true
-        },
+        "products":[
+            {
+                "id":{ "type":"string" },
+                "name":{ "type":"string" },
+                "slug":{ "type":"string" },
+                "description":{ "type":"string" },
+                "category":{ "type":"string" },
+                "unit":{ "type":"string" },
+                "unit_price":{ "type":"number" },
+                "active":{ "type":"boolean" },
+                "created_at":{ "type":"string" },
+                "created_by":{ "type":"string" }
+            }
+        ],
         "created_at": {
           "type": "string",
           "format": "date-time"
         },
         "created_by": {
-          "type": "string",
-          "format": "uuid"
-        },
-        "updated_at": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "updated_by": {
           "type": "string",
           "format": "uuid"
         }
@@ -53,8 +48,8 @@
     {
       "metadata": {
         "mongodb": {
-          "collection": "daily_layer_record",
-          "database": "poultry"
+          "collection": "branches",
+          "database": "jef-balanceone-general"
         },
         "created_at": {
           "type": "string",
