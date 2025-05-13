@@ -1,4 +1,5 @@
 "use client";
+
 import { JSX } from "react";
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -22,35 +23,41 @@ import {
 } from "@/components/ui/dialog";
 import { v4 as uuidv4 } from "uuid";
 
-type Change = { field: string; old_value: string; new_value: string };
+// Schema types
+type Change = { field: string; old: string | null; new: string | null };
+
 type ChangeHistoryEntry = {
-  changed_at: string;
-  changed_by: string;
+  timestamp: string;
+  user_id: string;
   changes: Change[];
-};
-type ESignature = {
-  signed_by: string;
-  signed_at: string;
-  signature_reason: "creation" | "update" | "deactivation";
-  signature_hash: string;
 };
 
 interface Product {
-  collection: "products";
-  product_id: string;
-  name: string;
-  slug: string;
-  description: string;
-  category: string;
-  unit: string;
-  unit_price: number;
-  active: boolean;
-  created_at: string;
-  created_by: string;
-  updated_at: string;
-  updated_by: string;
-  change_history: ChangeHistoryEntry[];
-  e_signature: ESignature;
+  data: {
+    id: string;
+    name: string;
+    slug: string;
+    description: string;
+    category: string;
+    unit: string;
+    unit_price: number;
+    active: boolean;
+    created_at: string;
+    created_by: string;
+    updated_at: string;
+    updated_by: string;
+  };
+  metadata: {
+    mongodb: {
+      collection: string;
+      database: string;
+    };
+    created_at: string;
+    created_by: string;
+    updated_at: string;
+    updated_by: string;
+    change_history: ChangeHistoryEntry[];
+  };
 }
 
 export default function Page(): JSX.Element {
@@ -64,57 +71,65 @@ export default function Page(): JSX.Element {
   const sampleTime = "2025-05-01T10:00:00Z";
 
   const [product, setProduct] = useState<Product>({
-    collection: "products",
-    product_id,
-    name: "",
-    slug,
-    description: "",
-    category: "",
-    unit: "",
-    unit_price: 0,
-    active: true,
-    created_at: sampleTime,
-    created_by: sampleUser,
-    updated_at: sampleTime,
-    updated_by: sampleUser,
-    change_history: [],
-    e_signature: {
-      signed_by: sampleUser,
-      signed_at: sampleTime,
-      signature_reason: "creation",
-      signature_hash:
-        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-    },
-  });
-
-  useEffect(() => {
-    setProduct({
-      collection: "products",
-      product_id,
-      name: "Sample Widget",
+    data: {
+      id: product_id,
+      name: "",
       slug,
-      description: "A sample widget for testing purposes.",
-      category: "Test Items",
-      unit: "piece",
-      unit_price: 99.99,
+      description: "",
+      category: "",
+      unit: "",
+      unit_price: 0,
       active: true,
       created_at: sampleTime,
       created_by: sampleUser,
       updated_at: sampleTime,
       updated_by: sampleUser,
-      change_history: [
-        {
-          changed_at: sampleTime,
-          changed_by: sampleUser,
-          changes: [{ field: "name", old_value: "", new_value: "Sample Widget" }],
+    },
+    metadata: {
+      mongodb: {
+        collection: "products",
+        database: "jef-balanceone-general",
+      },
+      created_at: sampleTime,
+      created_by: sampleUser,
+      updated_at: sampleTime,
+      updated_by: sampleUser,
+      change_history: [],
+    },
+  });
+
+  useEffect(() => {
+    setProduct({
+      data: {
+        id: product_id,
+        name: "Sample Widget",
+        slug,
+        description: "A sample widget for testing purposes.",
+        category: "Test Items",
+        unit: "piece",
+        unit_price: 99.99,
+        active: true,
+        created_at: sampleTime,
+        created_by: sampleUser,
+        updated_at: sampleTime,
+        updated_by: sampleUser,
+      },
+      metadata: {
+        mongodb: {
+          collection: "products",
+          database: "jef-balanceone-general",
         },
-      ],
-      e_signature: {
-        signed_by: sampleUser,
-        signed_at: sampleTime,
-        signature_reason: "creation",
-        signature_hash:
-          "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
+        created_at: sampleTime,
+        created_by: sampleUser,
+        updated_at: sampleTime,
+        updated_by: sampleUser,
+        change_history: [
+          {
+            timestamp: sampleTime,
+            user_id: sampleUser,
+            changes: [{ field: "name", old: "", new: "Sample Widget" }],
+          },
+        ],
       },
     });
   }, [product_id, slug]);
@@ -122,26 +137,34 @@ export default function Page(): JSX.Element {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const now = new Date().toISOString();
-    const changes: Change[] = [{ field: "updated", old_value: "(see audit)", new_value: "(see audit)" }];
+    const change: Change = {
+      field: "updated_at",
+      old: product.data.updated_at,
+      new: now,
+    };
     const updated: Product = {
-      ...product,
-      updated_at: now,
-      updated_by: sampleUser,
-      change_history: [...product.change_history, { changed_at: now, changed_by: sampleUser, changes }],
-      e_signature: {
-        signed_by: sampleUser,
-        signed_at: now,
-        signature_reason: "update",
-        signature_hash: uuidv4().replace(/-/g, ""),
+      data: {
+        ...product.data,
+        updated_at: now,
+        updated_by: sampleUser,
+      },
+      metadata: {
+        ...product.metadata,
+        updated_at: now,
+        updated_by: sampleUser,
+        change_history: [
+          ...product.metadata.change_history,
+          { timestamp: now, user_id: sampleUser, changes: [change] },
+        ],
       },
     };
     console.log("Payload:", updated);
-    // TODO: send `updated` to your API
-    router.push(`/purchasing/suppliers/${slug}/configure/${product_id}`);
+    // TODO: send `updated` to API
+    router.push(`/purchasing/suppliers/${slug}/configure/${product.data.id}`);
   };
 
   const handleDelete = () => {
-    console.log("Deleting product:", product.product_id);
+    console.log("Deleting product:", product.data.id);
     // TODO: call delete API endpoint
     router.push(`/purchasing/suppliers/${slug}/configure`);
   };
@@ -156,47 +179,84 @@ export default function Page(): JSX.Element {
           <CardContent className="space-y-4">
             <Input
               placeholder="Name"
-              value={product.name}
-              onChange={(e) => setProduct({ ...product, name: e.target.value })}
+              value={product.data.name}
+              onChange={(e) =>
+                setProduct({
+                  ...product,
+                  data: { ...product.data, name: e.target.value },
+                })
+              }
             />
             <Input
               placeholder="Slug"
-              value={product.slug}
-              onChange={(e) => setProduct({ ...product, slug: e.target.value })}
+              value={product.data.slug}
+              onChange={(e) =>
+                setProduct({
+                  ...product,
+                  data: { ...product.data, slug: e.target.value },
+                })
+              }
             />
             <Input
               placeholder="Description"
-              value={product.description}
-              onChange={(e) => setProduct({ ...product, description: e.target.value })}
+              value={product.data.description}
+              onChange={(e) =>
+                setProduct({
+                  ...product,
+                  data: { ...product.data, description: e.target.value },
+                })
+              }
             />
             <Input
               placeholder="Category"
-              value={product.category}
-              onChange={(e) => setProduct({ ...product, category: e.target.value })}
+              value={product.data.category}
+              onChange={(e) =>
+                setProduct({
+                  ...product,
+                  data: { ...product.data, category: e.target.value },
+                })
+              }
             />
             <Input
               placeholder="Unit (e.g. piece, kg)"
-              value={product.unit}
-              onChange={(e) => setProduct({ ...product, unit: e.target.value })}
+              value={product.data.unit}
+              onChange={(e) =>
+                setProduct({
+                  ...product,
+                  data: { ...product.data, unit: e.target.value },
+                })
+              }
             />
             <Input
               type="number"
               step="0.01"
               placeholder="Unit Price"
-              value={product.unit_price}
+              value={product.data.unit_price}
               onChange={(e) =>
-                setProduct({ ...product, unit_price: parseFloat(e.target.value) || 0 })
+                setProduct({
+                  ...product,
+                  data: {
+                    ...product.data,
+                    unit_price: parseFloat(e.target.value) || 0,
+                  },
+                })
               }
             />
             <label className="flex items-center space-x-2">
               <input
                 type="checkbox"
-                checked={product.active}
-                onChange={(e) => setProduct({ ...product, active: e.target.checked })}
+                checked={product.data.active}
+                onChange={(e) =>
+                  setProduct({
+                    ...product,
+                    data: { ...product.data, active: e.target.checked },
+                  })
+                }
               />
               <span>Active</span>
             </label>
           </CardContent>
+
           <CardFooter className="flex justify-between">
             <Dialog>
               <DialogTrigger asChild>
@@ -204,17 +264,21 @@ export default function Page(): JSX.Element {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Are You Sure You Want to Delete this Product?</DialogTitle>
-                  <DialogDescription>This action cannot be undone.</DialogDescription>
+                  <DialogTitle>
+                    Are You Sure You Want to Delete this Product?
+                  </DialogTitle>
+                  <DialogDescription>
+                    This action cannot be undone.
+                  </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-     
                   <Button variant="destructive" onClick={handleDelete}>
                     Yes, Delete
                   </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
             <div className="space-x-2">
               <Button variant="outline" onClick={() => router.back()}>
                 Cancel

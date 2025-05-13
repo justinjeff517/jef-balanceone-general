@@ -53,8 +53,8 @@
     {
       "metadata": {
         "mongodb": {
-          "collection": "daily_layer_record",
-          "database": "poultry"
+          "collection": "products",
+          "database": "jef-balanceone-general"
         },
         "created_at": {
           "type": "string",

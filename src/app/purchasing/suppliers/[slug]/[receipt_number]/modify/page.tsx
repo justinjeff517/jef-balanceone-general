@@ -25,7 +25,7 @@ import {
 interface PurchaseItem {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   quantity: number;
   unit_price: number;
   total_price: number;
@@ -42,25 +42,9 @@ const catalog: ItemDef[] = [
 interface Purchase {
   receipt_number: string;
   receipt_date: string;
+  supplier_tin?: string;
   items: PurchaseItem[];
 }
-
-const dummyPurchases: Purchase[] = [
-  {
-    receipt_number: "1001",
-    receipt_date: "2025-05-01",
-    items: [
-      { id: "1", name: "Widget", description: "Blue widget", unit_price: 10, quantity: 2, total_price: 20 },
-    ],
-  },
-  {
-    receipt_number: "1002",
-    receipt_date: "2025-05-02",
-    items: [
-      { id: "2", name: "Gadget", description: "Red gadget", unit_price: 15, quantity: 1, total_price: 15 },
-    ],
-  },
-];
 
 export default function EditPurchasePage(): JSX.Element {
   const { data: session, status } = useSession();
@@ -69,6 +53,7 @@ export default function EditPurchasePage(): JSX.Element {
   const supplierSlug = params.slug;
   const receiptNumber = params.receipt_number;
 
+  const [supplierTin, setSupplierTin] = useState("");
   const [receiptDate, setReceiptDate] = useState("");
   const [itemMap, setItemMap] = useState<Map<string, PurchaseItem>>(new Map());
 
@@ -85,6 +70,7 @@ export default function EditPurchasePage(): JSX.Element {
       }
     }
     function initializeForm(data: Purchase) {
+      setSupplierTin(data.supplier_tin ?? "");
       setReceiptDate(data.receipt_date);
       const m = new Map<string, PurchaseItem>();
       data.items.forEach(it => m.set(it.id, { ...it }));
@@ -138,62 +124,57 @@ export default function EditPurchasePage(): JSX.Element {
   const isDateValid = /^\d{4}-\d{2}-\d{2}$/.test(receiptDate);
   const available = useMemo(() => catalog.filter(d => !itemMap.has(d.id)), [itemMap]);
 
-  if (status === "loading") {
-    return <div>Loading...</div>;
-  }
-  if (status !== "authenticated" || !session) {
-    return <div>You must be signed in to edit purchases.</div>;
-  }
+  if (status === "loading") return <div>Loading...</div>;
+  if (status !== "authenticated" || !session) return <div>You must be signed in.</div>;
+
   const userId = session.user.id;
-  const userName = session.user.name;
+  const now = new Date().toISOString();
 
   const handleSave = () => {
-    if (!isDateValid) return;
+    if (!isDateValid || !supplierTin) return;
     const recordId = uuidv4();
-    const now = new Date().toISOString();
     const payload = {
-      collection: "purchase_records",
-      record_id: recordId,
-      supplier_name: supplierSlug.replace(/-/g, " "),
-      supplier_slug: supplierSlug,
-      receipt_date: receiptDate,
-      receipt_number: receiptNumber,
-      items: items.map(it => ({
-        id: it.id,
-        name: it.name,
-        description: it.description,
-        unit_price: it.unit_price,
-        quantity: it.quantity,
-        total_price: it.total_price,
-      })),
-      total_amount: total,
-      status: "draft",
-      created_at: now,
-      created_by: userName,
-      change_history: [] as any[],
-      e_signature: {
-        signed_by: userId,
-        signed_at: now,
-        signature_reason: "submission",
-        signature_hash: "".padStart(64, "0"),
+      data: {
+        record_id: recordId,
+        supplier_name: supplierSlug.replace(/-/g, " "),
+        supplier_slug: supplierSlug,
+        supplier_tin: supplierTin,
+        receipt_date: receiptDate,
+        receipt_number: receiptNumber,
+        items: items.map(it => ({
+          id: it.id,
+          name: it.name,
+          description: it.description,
+          quantity: it.quantity,
+          unit_price: it.unit_price,
+          total_price: it.total_price,
+        })),
+        total_amount: total,
+        status: "draft",
+        created_at: now,
+        created_by: userId,
+      },
+      metadata: {
+        mongodb: {
+          collection: "purchases",
+          database: "jef-balanceone-general",
+        },
+        created_at: now,
+        created_by: userId,
+        updated_at: now,
+        updated_by: userId,
+        change_history: [] as any[],
       },
     };
     console.log("Saving purchase payload:", JSON.stringify(payload, null, 2));
-    // TODO: replace with actual API call:
-    // fetch('/api/purchases', { method: 'POST', body: JSON.stringify(payload) })
+    // TODO: POST to /api/purchases
   };
 
   return (
     <div className="max-w-4xl mx-auto p-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Edit Purchase #{receiptNumber}</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>Edit Purchase #{receiptNumber}</CardTitle></CardHeader>
         <CardContent>
-          <div className="mb-6">
-            <label className="block mb-1 font-medium">Receipt Number</label>
-            <Input type="text" value={receiptNumber} disabled className="max-w-xs" />
-          </div>
           <div className="mb-6">
             <label className="block mb-1 font-medium">Receipt Date (YYYY-MM-DD)</label>
             <Input
@@ -206,7 +187,6 @@ export default function EditPurchasePage(): JSX.Element {
               <p className="text-red-500 text-sm mt-1">Invalid date.</p>
             )}
           </div>
-
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Add Items</h2>
             {available.length === 0 ? (
@@ -226,7 +206,6 @@ export default function EditPurchasePage(): JSX.Element {
               ))
             )}
           </section>
-
           <h2 className="text-xl font-semibold mb-4">Items ({items.length})</h2>
           {items.length === 0 ? (
             <p>No items in this purchase.</p>
@@ -266,14 +245,32 @@ export default function EditPurchasePage(): JSX.Element {
               </TableBody>
             </Table>
           )}
-
           <div className="text-right font-semibold mt-4">Total: ${total.toFixed(2)}</div>
         </CardContent>
         <CardFooter className="flex justify-end space-x-2">
           <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
-          <Button onClick={handleSave} disabled={!isDateValid}>Save Changes</Button>
+          <Button onClick={handleSave} disabled={!isDateValid || !supplierTin}>Save Changes</Button>
         </CardFooter>
       </Card>
     </div>
   );
 }
+
+const dummyPurchases: Purchase[] = [
+  {
+    receipt_number: "1001",
+    receipt_date: "2025-05-01",
+    supplier_tin: "123-456-789",
+    items: [
+      { id: "1", name: "Widget", description: "Blue widget", unit_price: 10, quantity: 2, total_price: 20 },
+    ],
+  },
+  {
+    receipt_number: "1002",
+    receipt_date: "2025-05-02",
+    supplier_tin: "987-654-321",
+    items: [
+      { id: "2", name: "Gadget", description: "Red gadget", unit_price: 15, quantity: 1, total_price: 15 },
+    ],
+  },
+];

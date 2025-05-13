@@ -2,7 +2,7 @@
   "schema": [
     {
       "data": {
-        "supplier_id": {
+        "id": {
           "type": "string",
           "format": "uuid"
         },
@@ -62,8 +62,8 @@
     {
       "metadata": {
         "mongodb": {
-          "collection": "daily_layer_record",
-          "database": "poultry"
+          "collection": "suppliers",
+          "database": "jef-balanceone-general"
         },
         "created_at": {
           "type": "string",

@@ -1,20 +1,12 @@
 {
-  "schema": [
+  "payload": [
     {
       "data": {
-        "record_id": {
-          "type": "string",
-          "format": "uuid"
-        },
-        "supplier_name": {
-          "type": "string",
-          "minLength": 1
-        },
         "supplier_slug": {
           "type": "string",
           "pattern": "^[a-z0-9_-]+$"
         },
-        "supplier_tin": {
+        "supplier_tin":{
           "type": "string",
           "minLength": 1
         },
@@ -54,9 +46,7 @@
                 "type": "number",
                 "minimum": 0
               }
-            },
-            "required": ["id", "name", "quantity", "unit_price", "total_price"],
-            "additionalProperties": false
+            }
           }
         },
         "total_amount": {
@@ -102,47 +92,8 @@
           "type": "string",
           "format": "uuid",
           "description": "UUID of the user who last updated the record."
-        },
-        "change_history": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "timestamp": {
-                "type": "string",
-                "format": "date-time",
-                "description": "When the change occurred."
-              },
-              "user_id": {
-                "type": "string",
-                "format": "uuid",
-                "description": "Who made the change."
-              },
-              "changes": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "field": {
-                      "type": "string",
-                      "description": "Name of the field changed."
-                    },
-                    "old": {
-                      "type": ["null", "string", "number", "array", "object"],
-                      "description": "Previous value."
-                    },
-                    "new": {
-                      "type": ["null", "string", "number", "array", "object"],
-                      "description": "New value."
-                    }
-                  },
-                  "required": ["field", "old", "new"]
-                }
-              }
-            },
-            "required": ["timestamp", "user_id", "changes"]
-          }
         }
+
       }
     }
   ]
