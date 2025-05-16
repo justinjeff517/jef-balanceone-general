@@ -165,7 +165,7 @@ export default function Page() {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button asChild variant="default" size="sm">
-              <Link href={`/purchasing/suppliers/${slug}/add`}>
+              <Link href={`/purchases/suppliers/${slug}/add`}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Purchase
               </Link>
@@ -177,7 +177,7 @@ export default function Page() {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button asChild size="sm" variant="outline">
-              <Link href={`/purchasing/suppliers/${slug}/configure`}>
+              <Link href={`/purchases/suppliers/${slug}/configure`}>
                 Configure
               </Link>
             </Button>
@@ -228,14 +228,14 @@ export default function Page() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem asChild>
                         <Link
-                          href={`/purchasing/suppliers/${slug}/${p.data.receipt_number}`}
+                          href={`/purchases/suppliers/${slug}/${p.data.receipt_number}`}
                         >
                           View
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link
-                          href={`/purchasing/suppliers/${slug}/${p.data.receipt_number}/modify`}
+                          href={`/purchases/suppliers/${slug}/${p.data.receipt_number}/modify`}
                         >
                           Modify
                         </Link>

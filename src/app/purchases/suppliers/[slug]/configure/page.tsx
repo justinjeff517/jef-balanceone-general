@@ -128,14 +128,14 @@ export default function Page(): JSX.Element {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
                           <Link
-                            href={`/purchasing/suppliers/${supplier.supplier_slug}/configure/${product.id}`}
+                            href={`/purchases/suppliers/${supplier.supplier_slug}/configure/${product.id}`}
                           >
                             View
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link
-                            href={`/purchasing/suppliers/${supplier.supplier_slug}/configure/${product.id}/modify`}
+                            href={`/purchases/suppliers/${supplier.supplier_slug}/configure/${product.id}/modify`}
                           >
                             Modify
                           </Link>

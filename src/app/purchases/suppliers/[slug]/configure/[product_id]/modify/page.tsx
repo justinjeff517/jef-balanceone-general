@@ -160,13 +160,13 @@ export default function Page(): JSX.Element {
     };
     console.log("Payload:", updated);
     // TODO: send `updated` to API
-    router.push(`/purchasing/suppliers/${slug}/configure/${product.data.id}`);
+    router.push(`/purchases/suppliers/${slug}/configure/${product.data.id}`);
   };
 
   const handleDelete = () => {
     console.log("Deleting product:", product.data.id);
     // TODO: call delete API endpoint
-    router.push(`/purchasing/suppliers/${slug}/configure`);
+    router.push(`/purchases/suppliers/${slug}/configure`);
   };
 
   return (

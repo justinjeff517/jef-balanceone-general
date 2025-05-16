@@ -39,8 +39,8 @@ const data = {
       icon: IconReceipt,
     },
     {
-      title: "Purchasing",
-      url: "/purchasing",
+      title: "Purchases",
+      url: "/purchases",
       icon: IconReceipt,
     }
   ],

@@ -240,7 +240,7 @@ const Page: FC = () => {
     console.log(JSON.stringify(payload, null, 2));
     // TODO: POST payload to API
 
-    router.push("/purchasing");
+    router.push("/purchases");
   }, [
     isFormValid,
     session,
@@ -264,7 +264,7 @@ const Page: FC = () => {
           <Button
             variant="outline"
             onClick={() =>
-              router.push(`/purchasing/suppliers/${supplier.slug}/configure`)
+              router.push(`/purchases/suppliers/${supplier.slug}/configure`)
             }
           >
             Configure

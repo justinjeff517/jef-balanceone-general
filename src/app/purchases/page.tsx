@@ -161,7 +161,7 @@ export default function Page() {
           <TooltipTrigger asChild>
             <Button size="sm">
               <Plus className="mr-2 h-4 w-4" />
-              <Link href="/purchasing/suppliers">New Purchase from Suppliers</Link>
+              <Link href="/purchases/suppliers">New Purchase from Suppliers</Link>
             </Button>
           </TooltipTrigger>
           <TooltipContent>

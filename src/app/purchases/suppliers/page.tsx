@@ -83,10 +83,10 @@ export default function Page() {
             </CardContent>
             <CardFooter className="flex flex-wrap gap-2">
               <Button asChild size="sm">
-                <Link href={`/purchasing/suppliers/${supplier.data.slug}`}>Select</Link>
+                <Link href={`/purchases/suppliers/${supplier.data.slug}`}>Select</Link>
               </Button>
               <Button asChild variant="outline" size="sm">
-                <Link href={`/purchasing/suppliers/${supplier.data.slug}/configure`}>
+                <Link href={`/purchases/suppliers/${supplier.data.slug}/configure`}>
                   Configure
                 </Link>
               </Button>
