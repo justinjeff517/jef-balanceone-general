@@ -18,37 +18,7 @@
           "type": "string",
           "minLength": 1
         },
-        "address": {
-          "type": "object",
-          "properties": {
-            "street": { "type": "string" },
-            "city": { "type": "string" },
-            "region": { "type": "string" },
-            "postal_code": { "type": "string" },
-            "country": { "type": "string" }
-          },
-          "required": ["street", "city", "country"],
-          "additionalProperties": false
-        },
-        "contact": {
-          "type": "object",
-          "properties": {
-            "email": { "type": "string", "format": "email" },
-            "phone": { "type": "string", "minLength": 7 }
-          },
-          "required": ["email"],
-          "additionalProperties": false
-        },
-        "bank_details": {
-          "type": "object",
-          "properties": {
-            "bank_name": { "type": "string" },
-            "account_name": { "type": "string" },
-            "account_number": { "type": "string" }
-          },
-          "required": ["bank_name", "account_name", "account_number"],
-          "additionalProperties": false
-        },
+
         "created_at": {
           "type": "string",
           "format": "date-time"
