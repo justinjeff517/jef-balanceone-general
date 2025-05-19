@@ -184,11 +184,12 @@ const Page: FC = () => {
     [itemMap]
   );
 
+// … other imports ...
   const handleSubmit = useCallback<() => Promise<void>>(async () => {
-    if (!isFormValid) return;
-    setLoading(true);
+    if (!isFormValid) return
+    setLoading(true)
 
-    const now = new Date().toISOString();
+    const now = new Date().toISOString()
 
     // data section
     const dataSection = {
@@ -210,37 +211,36 @@ const Page: FC = () => {
       status: "submitted" as const,
       created_at: now,
       created_by: session!.user!.id,
-    };
+    }
 
-    // metadata section
-    const metadataSection: {
-      mongodb: { collection: string; database: string };
-      created_at: string;
-      created_by: string;
-      updated_at: string;
-      updated_by: string;
-      change_history: ChangeHistoryEntry[];
-    } = {
-      mongodb: {
-        collection: "purchases",
-        database: "jef-balanceone-general",
-      },
-      created_at: now,
-      created_by: session!.user!.id,
-      updated_at: now,
-      updated_by: session!.user!.id,
-      change_history: [],
-    };
-
+    // wrap only dataSection under payload.data
     const payload = {
-      data: dataSection,
-      metadata: metadataSection,
-    };
+      payload: {
+        data: dataSection
+      }
+    }
+    console.log("SESSION OBJECT:", session)
 
-    console.log(JSON.stringify(payload, null, 2));
-    // TODO: POST payload to API
 
-    router.push("/purchases");
+    const token = session.accessToken
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    }
+
+    console.log("=== TEST HEADERS ===")
+    console.log(headers)
+    console.log("=== TEST PAYLOAD ===")
+    console.log(JSON.stringify(payload, null, 2))
+
+    // TODO: actually POST payload to your API endpoint here
+    // await fetch("/api/purchases", {
+    //   method: "POST",
+    //   headers,
+    //   body: JSON.stringify(payload)
+    // })
+
+    //router.push("/purchases")
   }, [
     isFormValid,
     session,
@@ -250,7 +250,8 @@ const Page: FC = () => {
     items,
     total,
     router,
-  ]);
+  ])
+
 
   return (
     <div className="max-w-6xl mx-auto p-6">
