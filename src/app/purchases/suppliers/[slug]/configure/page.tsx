@@ -100,9 +100,24 @@ export default function Page(): JSX.Element {
     <div className="p-6">
       <Card className="max-w-3xl mx-auto">
         <CardHeader>
-          <CardTitle>Products for {supplier.supplier_name}</CardTitle>
+          <CardTitle>Configure: {supplier.supplier_name}</CardTitle>
         </CardHeader>
+
         <CardContent>
+          {/* Company Details */}
+          <div className="mb-6 space-y-1">
+            <p className="text-sm">
+              <strong>Name:</strong> {supplier.supplier_name}
+            </p>
+            <p className="text-sm">
+              <strong>TIN:</strong> {supplier.supplier_tin}
+            </p>
+            <p className="text-sm">
+              <strong>Slug:</strong> {supplier.supplier_slug}
+            </p>
+          </div>
+
+          {/* Products Table */}
           <Table>
             <TableHeader>
               <TableRow>
