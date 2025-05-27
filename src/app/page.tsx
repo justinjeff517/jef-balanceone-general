@@ -21,7 +21,7 @@ export default function Page(): JSX.Element {
         </Button>
       </div>
 
-      <p className="mb-6">Welcome back, user@example.com</p>
+      <p className="mb-6">Welcome to the dashboard</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Link href="/purchases">

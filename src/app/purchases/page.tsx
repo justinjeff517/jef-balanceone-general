@@ -1,7 +1,6 @@
 "use client"
 import React from "react"
 import Link from "next/link"
-import { useSession } from "next-auth/react"
 import {
   Table,
   TableHeader,
@@ -150,9 +149,7 @@ const purchases: Purchase[] = [
 ]
 
 export default function Page() {
-  const { data: session, status } = useSession()
-  console.log("NextAuth session:", session)
-  console.log("Session status:", status)
+
 
   return (
     <div className="p-6">
