@@ -1,6 +1,7 @@
-"use client";
 
-import React from "react";
+'use client';
+
+import React, { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -12,13 +13,14 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { MoreHorizontal, Plus, Settings } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 interface PurchaseItem {
@@ -37,14 +39,14 @@ interface ChangeDetail {
 }
 
 interface ChangeHistoryEntry {
-  timestamp: string;   // date-time
-  user_id: string;     // uuid
+  timestamp: string;
+  user_id: string;
   changes: ChangeDetail[];
 }
 
 interface PurchaseRecord {
   data: {
-    record_id: string;           // uuid
+    record_id: string;
     supplier_name: string;
     supplier_slug: string;
     supplier_tin: string;
@@ -53,7 +55,7 @@ interface PurchaseRecord {
     items: PurchaseItem[];
     total_amount: number;
     status: "draft" | "submitted" | "approved" | "paid" | "cancelled";
-    created_at: string;          // date-time
+    created_at: string;          // ISO date-time
     created_by: string;          // uuid
   };
   metadata: {
@@ -61,9 +63,9 @@ interface PurchaseRecord {
       collection: "purchases";
       database: string;
     };
-    created_at: string;          // date-time
+    created_at: string;          // ISO date-time
     created_by: string;          // uuid
-    updated_at: string;          // date-time
+    updated_at: string;          // ISO date-time
     updated_by: string;          // uuid
     change_history: ChangeHistoryEntry[];
   };
@@ -156,97 +158,112 @@ const purchases: PurchaseRecord[] = [
 
 export default function Page() {
   const { slug } = useParams();
-  const filtered = purchases.filter(p => p.data.supplier_slug === slug);
+  const [search, setSearch] = useState("");
+  const filtered = purchases.filter(p =>
+    p.data.supplier_slug === slug &&
+    p.data.receipt_number.toLowerCase().includes(search.toLowerCase())
+  );
   const supplierName = filtered[0]?.data.supplier_name ?? slug;
 
   return (
-    <div className="p-6">
-      <div className="flex items-center space-x-4 mb-4">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button asChild variant="default" size="sm">
-              <Link href={`/purchases/suppliers/${slug}/add`}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Purchase
-              </Link>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Add a purchase for {supplierName}</TooltipContent>
-        </Tooltip>
+    <div>
+      {/* Top bar: search on left, actions on right */}
+    <div className="flex items-center mb-4 space-x-4">
+      <Input
+        placeholder="Search receipt #…"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        className="max-w-xs"
+        aria-label="Search receipt number"
+      />
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button asChild size="sm" variant="outline">
-              <Link href={`/purchases/suppliers/${slug}/configure`}>
-                Configure
-              </Link>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Configure for {supplierName}</TooltipContent>
-        </Tooltip>
-      </div>
+<Tooltip>
+  <TooltipTrigger asChild>
+    <Button asChild size="sm" variant="default">
+      <Link
+        href={`/purchases/suppliers/${slug}/add`}
+        aria-label={`Add purchase for ${supplierName}`}
+      >
+        Add Purchase <Plus className="h-4 w-4" />
+      </Link>
+    </Button>
+  </TooltipTrigger>
+  <TooltipContent>Add purchase for {supplierName}</TooltipContent>
+</Tooltip>
 
-      <h2 className="text-2xl font-semibold mb-4">
-        Purchases for {supplierName}
-      </h2>
 
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button size="sm" variant="outline">
+            <Link href={`/purchases/suppliers/${slug}/configure`}>
+              <Settings className="h-4 w-4" />
+            </Link>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Configure</TooltipContent>
+      </Tooltip>
+    </div>
+
+      {/* Title */}
+
+
+
+      {/* Table */}
       {filtered.length === 0 ? (
-        <p>No purchases found for {supplierName}.</p>
+        <p>No purchases found.</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Receipt #</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead>Updated At</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map(p => (
-              <TableRow key={p.data.record_id}>
-                <TableCell>{p.data.receipt_date}</TableCell>
-                <TableCell>{p.data.receipt_number}</TableCell>
-                <TableCell>${p.data.total_amount.toFixed(2)}</TableCell>
-                <TableCell>{p.data.status}</TableCell>
-                <TableCell>
-                  {new Date(p.metadata.created_at).toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  {new Date(p.metadata.updated_at).toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link
-                          href={`/purchases/suppliers/${slug}/${p.data.receipt_number}`}
-                        >
-                          View
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link
-                          href={`/purchases/suppliers/${slug}/${p.data.receipt_number}/modify`}
-                        >
-                          Modify
-                        </Link>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+        <div className="overflow-auto rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Receipt #</TableHead>
+                <TableHead>Total</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead>Updated</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filtered.map(p => (
+                <TableRow key={p.data.record_id}>
+                  <TableCell>{p.data.receipt_date}</TableCell>
+                  <TableCell>{p.data.receipt_number}</TableCell>
+                  <TableCell>${p.data.total_amount.toFixed(2)}</TableCell>
+                  <TableCell className="capitalize">{p.data.status}</TableCell>
+                  <TableCell>
+                    {new Date(p.metadata.created_at).toLocaleString()}
+                  </TableCell>
+                  <TableCell>
+                    {new Date(p.metadata.updated_at).toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/purchases/suppliers/${slug}/${p.data.receipt_number}`}>
+                            View
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/purchases/suppliers/${slug}/${p.data.receipt_number}/modify`}>
+                            Modify
+                          </Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   );
