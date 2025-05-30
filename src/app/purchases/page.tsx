@@ -1,6 +1,7 @@
-"use client"
-import React from "react"
-import Link from "next/link"
+"use client";
+
+import React, { useState } from "react";
+import Link from "next/link";
 import {
   Table,
   TableHeader,
@@ -8,52 +9,61 @@ import {
   TableBody,
   TableRow,
   TableCell,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Plus } from "lucide-react"
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+} from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { MoreHorizontal, Plus, Search } from "lucide-react";
 
 interface PurchaseItem {
-  id: string
-  name: string
-  description: string
-  quantity: number
-  unit_price: number
-  total_price: number
+  id: string;
+  name: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
 }
 
 interface ChangeHistoryEntry {
-  changed_at: string
-  changed_by: string
+  changed_at: string;
+  changed_by: string;
   changes: {
-    field: string
-    old_value: string
-    new_value: string
-  }
+    field: string;
+    old_value: string;
+    new_value: string;
+  };
 }
 
 interface Purchase {
-  id: string
-  supplier_name: string
-  supplier_slug: string
-  supplier_tin: string
-  receipt_date: string
-  receipt_number: string
-  items: PurchaseItem[]
-  total_amount: number
-  status: string
-  created_at: string
-  updated_at: string
-  created_by: string
-  approved_by: string
-  approval_timestamp: string
-  change_history: ChangeHistoryEntry[]
+  id: string;
+  supplier_name: string;
+  supplier_slug: string;
+  supplier_tin: string;
+  receipt_date: string;
+  receipt_number: string;
+  items: PurchaseItem[];
+  total_amount: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  approved_by: string;
+  approval_timestamp: string;
+  change_history: ChangeHistoryEntry[];
 }
 
 const purchases: Purchase[] = [
@@ -146,10 +156,14 @@ const purchases: Purchase[] = [
       },
     ],
   },
-]
+];
 
 export default function Page() {
-
+  const [searchQuery, setSearchQuery] = useState("");
+  const filtered = purchases.filter((p) =>
+    p.supplier_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.receipt_number.includes(searchQuery)
+  );
 
   return (
     <div className="p-6">
@@ -165,6 +179,68 @@ export default function Page() {
             Create a new purchase record from suppliers
           </TooltipContent>
         </Tooltip>
+
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button size="sm">
+              <Search className="mr-2 h-4 w-4" />
+              Search Purchases
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Search Purchases</DialogTitle>
+            </DialogHeader>
+            <Input
+              placeholder="Supplier or Receipt #"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="mb-4"
+            />
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Receipt #</TableHead>
+                  <TableHead>Supplier</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell>{p.receipt_date}</TableCell>
+                    <TableCell>{p.receipt_number}</TableCell>
+                    <TableCell>{p.supplier_name}</TableCell>
+                    <TableCell>{p.total_amount.toFixed(2)}</TableCell>
+                    <TableCell>{p.status}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/suppliers/${p.supplier_slug}`}>
+                              View Supplier
+                            </Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <DialogFooter>
+              <Button onClick={() => setSearchQuery("")}>Clear</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Table>
@@ -176,7 +252,7 @@ export default function Page() {
             <TableHead>Total</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created</TableHead>
-
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -190,11 +266,26 @@ export default function Page() {
               <TableCell>
                 {new Date(p.created_at).toLocaleString()}
               </TableCell>
-          
+              <TableCell>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link href={`/suppliers/${p.supplier_slug}`}>
+                        View Supplier
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }
