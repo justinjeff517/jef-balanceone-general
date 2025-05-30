@@ -9,7 +9,7 @@ export default function SuppliersPage() {
   useEffect(() => {
     async function fetchSuppliers() {
       try {
-        const res = await fetch('/api/suppliers')
+        const res = await fetch('/api/suppliers/view-suppliers')
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Failed to fetch suppliers')
         setSuppliers(data.data.suppliers)
