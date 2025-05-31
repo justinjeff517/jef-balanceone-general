@@ -170,7 +170,7 @@ export default function Page(): JSX.Element {
   };
 
   return (
-    <div className="p-6">
+    <div>
       <Card className="max-w-md mx-auto">
         <CardHeader>
           <CardTitle>Modify Product</CardTitle>

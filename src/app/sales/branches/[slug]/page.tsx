@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MoreHorizontal, Plus } from "lucide-react";
+import { MoreHorizontal, Plus } from "lucide-react";
 import {
   Tooltip,
   TooltipTrigger,
@@ -187,7 +187,7 @@ export default function Page() {
   }, [search, fuse]);
 
   return (
-    <div className="p-6">
+    <div>
       {/* Header Buttons */}
       <div className="flex items-center space-x-4 mb-4">
         <Tooltip>
@@ -214,29 +214,17 @@ export default function Page() {
         </Tooltip>
       </div>
 
-      <h2 className="text-2xl font-semibold mb-4">
-        Sales for {branchName}
-      </h2>
 
       {/* Inline Search Bar (centered) */}
       <div className="flex items-center justify-center mb-6">
-        <Search className="mr-2 h-5 w-5 text-gray-500" />
+
         <Input
           placeholder="Search by receipt # or branch name"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-md"
+          className="w-1/2"
         />
-        {search && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSearch("")}
-            className="ml-2"
-          >
-            Clear
-          </Button>
-        )}
+
       </div>
 
       {/* Sales Table */}

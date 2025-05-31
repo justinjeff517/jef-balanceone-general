@@ -169,14 +169,6 @@ export default function Page() {
     <div>
       {/* Top bar: search on left, actions on right */}
     <div className="flex items-center mb-4 space-x-4">
-      <Input
-        placeholder="Search receipt #…"
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        className="max-w-xs"
-        aria-label="Search receipt number"
-      />
-
 <Tooltip>
   <TooltipTrigger asChild>
     <Button asChild size="sm" variant="default">
@@ -190,7 +182,6 @@ export default function Page() {
   </TooltipTrigger>
   <TooltipContent>Add purchase for {supplierName}</TooltipContent>
 </Tooltip>
-
 
       <Tooltip>
         <TooltipTrigger asChild>
@@ -206,6 +197,15 @@ export default function Page() {
 
       {/* Title */}
 
+<div className="flex items-center justify-center mb-6">
+        <Input
+        placeholder="Search receipt #…"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        className="w-1/2"
+        aria-label="Search receipt number"
+      />
+</div>
 
 
       {/* Table */}

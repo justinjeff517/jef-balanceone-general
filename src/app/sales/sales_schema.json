@@ -74,14 +74,6 @@
         "payment_method": {
           "type": "string",
           "enum": ["cash", "cheque", "gcash"]
-        },
-        "created_at": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "created_by": {
-          "type": "string",
-          "format": "uuid"
         }
       }
     },

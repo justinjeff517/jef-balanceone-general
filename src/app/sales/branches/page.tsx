@@ -131,13 +131,13 @@ export default function Page() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="mb-4">
+    <div>
+      <div className="flex items-center justify-center mb-6">
         <Input
           placeholder="Search branches..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="max-w-md"
+          className="w-1/2"
         />
       </div>
 

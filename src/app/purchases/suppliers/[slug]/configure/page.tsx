@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableHeader,
@@ -45,7 +44,6 @@ type SupplierData = {
 export default function Page(): JSX.Element {
   const { slug } = useParams() as { slug: string };
 
-  // TODO: replace with real data fetching
   const supplier: SupplierData = {
     supplier_name: slug,
     supplier_slug: slug,
@@ -97,73 +95,65 @@ export default function Page(): JSX.Element {
   };
 
   return (
-    <div className="p-6">
-      <Card className="max-w-3xl mx-auto">
-        <CardHeader>
-          <CardTitle>Configure: {supplier.supplier_name}</CardTitle>
-        </CardHeader>
+    <div className="max-w-3xl mx-auto">
 
-        <CardContent>
-          {/* Company Details */}
-          <div className="mb-6 space-y-1">
-            <p className="text-sm">
-              <strong>Name:</strong> {supplier.supplier_name}
-            </p>
-            <p className="text-sm">
-              <strong>TIN:</strong> {supplier.supplier_tin}
-            </p>
-            <p className="text-sm">
-              <strong>Slug:</strong> {supplier.supplier_slug}
-            </p>
-          </div>
+      <div className="mb-6 space-y-1">
+        <p className="text-sm">
+          <strong>Name:</strong> {supplier.supplier_name}
+        </p>
+        <p className="text-sm">
+          <strong>TIN:</strong> {supplier.supplier_tin}
+        </p>
+        <p className="text-sm">
+          <strong>Slug:</strong> {supplier.supplier_slug}
+        </p>
+      </div>
 
-          {/* Products Table */}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {supplier.products.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell>{product.name}</TableCell>
-                  <TableCell>{product.description}</TableCell>
-                  <TableCell>${product.unit_price.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link
-                            href={`/purchases/suppliers/${supplier.supplier_slug}/configure/${product.id}`}
-                          >
-                            View
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link
-                            href={`/purchases/suppliers/${supplier.supplier_slug}/configure/${product.id}/modify`}
-                          >
-                            Modify
-                          </Link>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Price</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {supplier.products.map((product) => (
+            <TableRow key={product.id}>
+              <TableCell>{product.name}</TableCell>
+              <TableCell>{product.description}</TableCell>
+              <TableCell>${product.unit_price.toFixed(2)}</TableCell>
+              <TableCell className="text-right">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href={`/purchases/suppliers/${supplier.supplier_slug}/configure/${product.id}`}
+                      >
+                        View
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href={`/purchases/suppliers/${supplier.supplier_slug}/configure/${product.id}/modify`}
+                      >
+                        Modify
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }
+

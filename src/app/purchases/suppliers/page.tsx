@@ -90,21 +90,20 @@ const Page: FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-4">Suppliers</h1>
+    <div>
 
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-2">
-        <div className="flex items-center flex-grow min-w-0">
-          <Search className="mr-2 h-5 w-5 text-gray-500" />
+
+        <div className="flex items-center justify-center mb-6">
+
           <Input
             placeholder="Search suppliers…"
             value={searchQuery}
             onChange={onSearchChange}
-            className="w-full"
+            className="w-1/2"
           />
         </div>
 
-      </div>
+  
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {displayedSuppliers.map(s => (

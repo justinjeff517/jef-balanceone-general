@@ -202,7 +202,7 @@ const Page: React.FC = () => {
   }, [isFormValid, supplier, receiptDate, receiptNumber, items, total]);
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div>
       <Card>
         <CardHeader>
           <CardTitle>Purchase for {supplier.name}</CardTitle>
