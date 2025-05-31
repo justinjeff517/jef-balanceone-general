@@ -1,11 +1,10 @@
-"use client"
-import React from "react"
-import { useSession, signOut } from "next-auth/react"
+"use client";
+import React from "react";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "@/components/ui/avatar"
+} from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -14,37 +13,33 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 import {
   IconCreditCard,
   IconDotsVertical,
   IconLogout,
   IconNotification,
   IconUserCircle,
-} from "@tabler/icons-react"
+} from "@tabler/icons-react";
 
 export function NavUser() {
-  const { data: session, status } = useSession()
-  if (status === "loading") return null
-
-  // fallback to test JSON if there's no real session
-  const user = session?.user ?? {
-    name: "Test User",
-    email: "test@example.com",
+  const user = {
+    name: "Guest User",
+    email: "guest@example.com",
     image: "",
-  }
-  // generate an avatar URL if none provided
+  };
+
   const avatarUrl =
     user.image ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}`
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}`;
 
-  const { isMobile } = useSidebar()
+  const { isMobile } = useSidebar();
 
   return (
     <SidebarMenu>
@@ -119,7 +114,7 @@ export function NavUser() {
 
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem onSelect={() => signOut()}>
+            <DropdownMenuItem>
               <IconLogout className="mr-2 h-4 w-4" />
               Log out
             </DropdownMenuItem>
@@ -127,5 +122,5 @@ export function NavUser() {
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }
