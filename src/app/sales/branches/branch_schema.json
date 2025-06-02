@@ -20,28 +20,6 @@
         },
         "address": {
             "type":"string"
-        },
-        "products":[
-            {
-                "id":{ "type":"string" },
-                "name":{ "type":"string" },
-                "slug":{ "type":"string" },
-                "description":{ "type":"string" },
-                "category":{ "type":"string" },
-                "unit":{ "type":"string" },
-                "unit_price":{ "type":"number" },
-                "active":{ "type":"boolean" },
-                "created_at":{ "type":"string" },
-                "created_by":{ "type":"string" }
-            }
-        ],
-        "created_at": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "created_by": {
-          "type": "string",
-          "format": "uuid"
         }
       }
     },

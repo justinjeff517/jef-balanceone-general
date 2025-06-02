@@ -1,10 +1,9 @@
-"use client";
+'use client';
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo, ChangeEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -13,6 +12,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 interface Product {
   id: string;
@@ -37,7 +37,34 @@ interface ChangeHistoryEntry {
   }[];
 }
 
-interface Branch {
+interface BranchRaw {
+  data: {
+    id: string;
+    name: string;
+    slug: string;
+    tin: string;
+    address: string;
+    products?: Product[];
+    created_at: string;
+    created_by: string;
+    updated_at?: string;
+    updated_by?: string;
+    change_history?: ChangeHistoryEntry[];
+  };
+  metadata: {
+    mongodb: {
+      collection: string;
+      database: string;
+    };
+    created_at: string;
+    created_by: string;
+    updated_at: string;
+    updated_by: string;
+    change_history: ChangeHistoryEntry[];
+  };
+}
+
+export interface Branch {
   id: string;
   name: string;
   slug: string;
@@ -51,84 +78,71 @@ interface Branch {
   change_history: ChangeHistoryEntry[];
 }
 
-const branches: Branch[] = [
-  {
-    id: "1e2d3c4b-5a6f-7e8d-9c0b-1a2e3f4d5c6b",
-    name: "Central Branch",
-    slug: "central-branch",
-    tin: "987-654-321",
-    address: "123 Main St, Central City",
-    products: [],
-    created_at: "2025-05-30T08:00:00Z",
-    created_by: "11111111-1111-1111-1111-111111111111",
-    updated_at: "2025-05-31T09:15:00Z",
-    updated_by: "22222222-2222-2222-2222-222222222222",
-    change_history: [],
-  },
-  {
-    id: "2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e",
-    name: "North Branch",
-    slug: "north-branch",
-    tin: "987-654-322",
-    address: "456 North Rd, Northtown",
-    products: [],
-    created_at: "2025-05-30T08:30:00Z",
-    created_by: "11111111-1111-1111-1111-111111111111",
-    updated_at: "2025-05-31T09:45:00Z",
-    updated_by: "22222222-2222-2222-2222-222222222222",
-    change_history: [],
-  },
-  {
-    id: "3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
-    name: "East Branch",
-    slug: "east-branch",
-    tin: "987-654-323",
-    address: "789 East Blvd, Eastville",
-    products: [],
-    created_at: "2025-05-30T09:00:00Z",
-    created_by: "11111111-1111-1111-1111-111111111111",
-    updated_at: "2025-05-31T10:00:00Z",
-    updated_by: "22222222-2222-2222-2222-222222222222",
-    change_history: [],
-  },
-  {
-    id: "4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a",
-    name: "South Branch",
-    slug: "south-branch",
-    tin: "987-654-324",
-    address: "321 South St, Southcity",
-    products: [],
-    created_at: "2025-05-30T09:30:00Z",
-    created_by: "11111111-1111-1111-1111-111111111111",
-    updated_at: "2025-05-31T10:30:00Z",
-    updated_by: "22222222-2222-2222-2222-222222222222",
-    change_history: [],
-  },
-  {
-    id: "5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
-    name: "West Branch",
-    slug: "west-branch",
-    tin: "987-654-325",
-    address: "654 West Ave, Westburg",
-    products: [],
-    created_at: "2025-05-30T10:00:00Z",
-    created_by: "11111111-1111-1111-1111-111111111111",
-    updated_at: "2025-05-31T11:00:00Z",
-    updated_by: "22222222-2222-2222-2222-222222222222",
-    change_history: [],
-  },
-];
-
 export default function Page() {
   const router = useRouter();
+  const [rawBranches, setRawBranches] = useState<BranchRaw[]>([]);
   const [query, setQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [progressValue, setProgressValue] = useState(0);
+
+  useEffect(() => {
+    async function loadBranches() {
+      try {
+        const res = await fetch("/api/database/branches/get-branches", { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to fetch");
+        const json = await res.json();
+        setRawBranches(Array.isArray(json.branches) ? json.branches : []);
+      } catch (err) {
+        console.error("Error loading branches:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadBranches();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading) return;
+    const interval = setInterval(() => {
+      setProgressValue(prev => (prev >= 100 ? 0 : prev + 10));
+    }, 200);
+    return () => clearInterval(interval);
+  }, [isLoading]);
+
+  const branches: Branch[] = useMemo(
+    () =>
+      rawBranches.map((b) => ({
+        id: b.data.id,
+        name: b.data.name,
+        slug: b.data.slug,
+        tin: b.data.tin,
+        address: b.data.address,
+        products: b.data.products || [],
+        created_at: b.data.created_at,
+        created_by: b.data.created_by,
+        updated_at: b.data.updated_at || "",
+        updated_by: b.data.updated_by || "",
+        change_history: b.data.change_history || [],
+      })),
+    [rawBranches]
+  );
+
   const filtered = useMemo(
     () =>
       branches.filter((b) =>
         b.name.toLowerCase().includes(query.toLowerCase())
       ),
-    [query]
+    [branches, query]
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full flex-col items-center justify-center">
+        <span className="mb-2">Loading branches...</span>
+        <Progress value={progressValue} className="w-1/2" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -136,12 +150,11 @@ export default function Page() {
         <Input
           placeholder="Search branches..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
           className="w-1/2"
         />
       </div>
 
-      {/* Branch Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {filtered.map((branch) => (
           <Card
