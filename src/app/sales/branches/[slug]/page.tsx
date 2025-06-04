@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Fuse from "fuse.js";
@@ -8,9 +8,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableHeader,
@@ -82,113 +81,55 @@ interface SaleRecord {
   metadata: Metadata;
 }
 
-const sales: SaleRecord[] = [
-  {
-    data: {
-      id: "f1e2d3c4-5678-90ab-cdef-1234567890ab",
-      branch_name: "North Branch",
-      branch_slug: "north-branch",
-      branch_tin: "987-654-321",
-      receipt_date: "2025-05-11",
-      receipt_number: "S2001",
-      items: [
-        {
-          id: "aaaabbbb-cccc-dddd-eeee-ffff00001111",
-          name: "Wireless Headphones",
-          description: "Bluetooth over-ear",
-          quantity: 3,
-          unit: "piece",
-          unit_price: 59.99,
-          total_price: 179.97,
-        },
-      ],
-      total_amount: 179.97,
-      status: "submitted",
-      payment_method: "gcash",
-      created_at: "2025-05-11T09:00:00Z",
-      created_by: "11112222-3333-4444-5555-666677778888",
-    },
-    metadata: {
-      mongodb: {
-        collection: "sales",
-        database: "jef-balanceone-general",
-      },
-      created_at: "2025-05-11T09:00:00Z",
-      created_by: "11112222-3333-4444-5555-666677778888",
-      updated_at: "2025-05-11T09:15:00Z",
-      updated_by: "11112222-3333-4444-5555-666677778888",
-      change_history: [
-        {
-          timestamp: "2025-05-11T09:15:00Z",
-          user_id: "11112222-3333-4444-5555-666677778888",
-          changes: [
-            { field: "status", old: "draft", new: "submitted" },
-          ],
-        },
-      ],
-    },
-  },
-  {
-    data: {
-      id: "01234567-89ab-cdef-0123-456789abcdef",
-      branch_name: "North Branch",
-      branch_slug: "north-branch",
-      branch_tin: "987-654-321",
-      receipt_date: "2025-05-12",
-      receipt_number: "S2002",
-      items: [
-        {
-          id: "22223333-4444-5555-6666-777788889999",
-          name: "Portable Speaker",
-          description: "Waterproof, 12h battery",
-          quantity: 2,
-          unit: "piece",
-          unit_price: 39.99,
-          total_price: 79.98,
-        },
-      ],
-      total_amount: 79.98,
-      status: "draft",
-      payment_method: "cash",
-      created_at: "2025-05-12T10:30:00Z",
-      created_by: "11112222-3333-4444-5555-666677778888",
-    },
-    metadata: {
-      mongodb: {
-        collection: "sales",
-        database: "jef-balanceone-general",
-      },
-      created_at: "2025-05-12T10:30:00Z",
-      created_by: "11112222-3333-4444-5555-666677778888",
-      updated_at: "2025-05-12T10:30:00Z",
-      updated_by: "11112222-3333-4444-5555-666677778888",
-      change_history: [],
-    },
-  },
-];
-
 export default function Page() {
   const { slug } = useParams();
-  const branchName = sales[0]?.data.branch_name ?? slug;
+  const [sales, setSales] = useState<SaleRecord[]>([]);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchSales() {
+      setLoading(true);
+      const res = await fetch(
+        `/api/database/sales/get-sales-by-branch-slug?branch_slug=${encodeURIComponent(
+          slug ?? ""
+        )}`
+      );
+      if (res.ok) {
+        const json = await res.json();
+        setSales(json.sales);
+      } else {
+        setSales([]);
+      }
+      setLoading(false);
+    }
+    if (slug) {
+      fetchSales();
+    }
+  }, [slug]);
 
   const fuse = useMemo(
     () =>
       new Fuse<SaleRecord>(sales, {
-        keys: ["data.receipt_number","data.receipt_date", "data.branch_name"],
+        keys: ["data.receipt_number", "data.receipt_date", "data.branch_name"],
         threshold: 0.3,
       }),
-    []
+    [sales]
   );
 
   const filteredSales = useMemo(() => {
     if (!search.trim()) return sales;
     return fuse.search(search).map((result) => result.item);
-  }, [search, fuse]);
+  }, [search, fuse, sales]);
+
+  const branchName = sales[0]?.data.branch_name ?? slug;
+
+  if (loading) {
+    return <p className="text-center">Loading…</p>;
+  }
 
   return (
     <div>
-      {/* Header Buttons */}
       <div className="flex items-center space-x-4 mb-4">
         <Tooltip>
           <TooltipTrigger asChild>
@@ -205,29 +146,22 @@ export default function Page() {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button asChild variant="outline" size="sm">
-              <Link href={`/sales/branches/${slug}/configure`}>
-                Configure
-              </Link>
+              <Link href={`/sales/branches/${slug}/configure`}>Configure</Link>
             </Button>
           </TooltipTrigger>
           <TooltipContent>Configure for {branchName}</TooltipContent>
         </Tooltip>
       </div>
 
-
-      {/* Inline Search Bar (centered) */}
       <div className="flex items-center justify-center mb-6">
-
         <Input
           placeholder="Search by receipt # or branch name"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-1/2"
+          className="w-2/3"
         />
-
       </div>
 
-      {/* Sales Table */}
       {filteredSales.length === 0 ? (
         <p className="text-center">No sales found for “{search}”.</p>
       ) : (
@@ -249,9 +183,7 @@ export default function Page() {
                 <TableCell>{s.data.receipt_date}</TableCell>
                 <TableCell>{s.data.receipt_number}</TableCell>
                 <TableCell>{s.data.payment_method}</TableCell>
-                <TableCell>
-                  ${s.data.total_amount.toFixed(2)}
-                </TableCell>
+                <TableCell>${s.data.total_amount.toFixed(2)}</TableCell>
                 <TableCell>{s.data.status}</TableCell>
                 <TableCell>
                   {new Date(s.data.created_at).toLocaleString()}
