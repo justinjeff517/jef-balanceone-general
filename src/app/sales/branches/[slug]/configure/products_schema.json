@@ -28,33 +28,19 @@
           "type": "number",
           "minimum": 0
         },
+        "branch_name": {
+          "type": "string",
+          "description": "Name of the branch where the product is available."
+        },
+        "branch_slug": {
+          "type": "string",
+          "description": "Slug of the branch where the product is available."
+        },
         "active": {
           "type": "boolean",
           "default": true
-        },
-        "supplier_id": {
-          "type": "string",
-          "format": "uuid"  
-        },
-        "created_at": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "created_by": {
-          "type": "string",
-          "format": "uuid"
-        },
-        "updated_at": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "updated_by": {
-          "type": "string",
-          "format": "uuid"
         }
-      }
-    },
-    {
+      },
       "metadata": {
         "mongodb": {
           "collection": "products",
@@ -124,3 +110,6 @@
     }
   ]
 }
+
+
+
