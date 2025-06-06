@@ -82,7 +82,10 @@ interface SaleRecord {
 }
 
 export default function Page() {
-  const { slug } = useParams();
+  const params = useParams();
+  const rawSlug = params.slug;
+  const slug = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug ?? "";
+
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -92,7 +95,7 @@ export default function Page() {
       setLoading(true);
       const res = await fetch(
         `/api/database/sales/get-sales-by-branch-slug?branch_slug=${encodeURIComponent(
-          slug ?? ""
+          slug
         )}`
       );
       if (res.ok) {
@@ -197,17 +200,8 @@ export default function Page() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem asChild>
-                        <Link
-                          href={`/sales/branches/${slug}/${s.data.receipt_number}`}
-                        >
+                        <Link href={`/sales/branches/${slug}/${s.data.id}`}>
                           View
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link
-                          href={`/sales/branches/${slug}/${s.data.receipt_number}/modify`}
-                        >
-                          Modify
                         </Link>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
