@@ -70,11 +70,11 @@ interface PurchaseRecord {
   };
 }
 
-export default function Page() {
-  const { slug } = useParams();
-  const [search, setSearch] = useState("");
+const Page: React.FC = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const [search, setSearch] = useState<string>("");
   const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     async function fetchPurchases() {
@@ -86,8 +86,6 @@ export default function Page() {
           )}`,
           { cache: "no-store" }
         );
-        console.log("Fetching purchases for slug:", slug);
-        console.log("Response status:", res.status);
         if (!res.ok) {
           setPurchases([]);
         } else {
@@ -116,16 +114,17 @@ export default function Page() {
       <p>
         SLUG: <strong>{slug}</strong>
       </p>
+
       <div className="flex items-center mb-4 space-x-4">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Link href={`/purchases/suppliers/${slug}/add`}>
+            <Link href={`/purchases/suppliers/${slug}/new`}>
               <Button size="sm" variant="default">
-                Add Purchase <Plus className="h-4 w-4" />
+                New Purchase <Plus className="h-4 w-4" />
               </Button>
             </Link>
           </TooltipTrigger>
-          <TooltipContent>Add purchase for {supplierName}</TooltipContent>
+          <TooltipContent>New purchase for {supplierName}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -150,72 +149,83 @@ export default function Page() {
         />
       </div>
 
-      {loading ? (
-        <p>Loading...</p>
-      ) : filtered.length === 0 ? (
-        <p>No purchases found.</p>
-      ) : (
-        <div className="overflow-auto rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Receipt #</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Updated</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((p) => (
-                <TableRow key={p.data.record_id}>
-                  <TableCell>{p.data.receipt_date}</TableCell>
-                  <TableCell>{p.data.receipt_number}</TableCell>
-                  <TableCell>
-                    {`$${p.data.total_amount.toFixed(2)}`}
-                  </TableCell>
-                  <TableCell className="capitalize">
-                    {p.data.status}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(p.metadata.created_at).toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(p.metadata.updated_at).toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link
-                            href={`/purchases/suppliers/${slug}/${p.data.receipt_number}`}
-                          >
-                            View
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link
-                            href={`/purchases/suppliers/${slug}/${p.data.receipt_number}/modify`}
-                          >
-                            Modify
-                          </Link>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+      {/* Two-column layout */}
+      <div className="flex">
+        {/* Left half: table or messages */}
+        <div className="w-1/2 pr-4">
+          {loading ? (
+            <p>Loading...</p>
+          ) : filtered.length === 0 ? (
+            <p>No purchases found.</p>
+          ) : (
+            <div className="overflow-auto rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Receipt #</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Updated</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((p) => (
+                    <TableRow key={p.data.record_id}>
+                      <TableCell>{p.data.receipt_date}</TableCell>
+                      <TableCell>{p.data.receipt_number}</TableCell>
+                      <TableCell>
+                        ${p.data.total_amount.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="capitalize">
+                        {p.data.status}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(p.metadata.created_at).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(p.metadata.updated_at).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link
+                                href={`/purchases/suppliers/${slug}/${p.data.receipt_number}`}
+                              >
+                                View
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link
+                                href={`/purchases/suppliers/${slug}/${p.data.receipt_number}/modify`}
+                              >
+                                Modify
+                              </Link>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Right half: empty placeholder */}
+        <div className="w-1/2">{/* empty right side */}</div>
+      </div>
     </div>
   );
-}
+};
+
+export default Page;
