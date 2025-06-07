@@ -1,172 +1,76 @@
-'use client';
+"use client"
+import { useMemo, useState } from "react"
+import Link from "next/link"
 
-import React, { FC, useState, useEffect, useMemo, ChangeEvent } from 'react';
-import Fuse from 'fuse.js';
-import {
-  Table,
-  TableHeader,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-} from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
-import Link from 'next/link';
+const MONTH_NAMES = [
+  "January", "February", "March",
+  "April",   "May",      "June",
+  "July",    "August",   "September",
+  "October", "November", "December",
+]
 
-interface Item {
-  id: string;
-  name: string;
-  description: string;
-  quantity: number;
-  unit: string;
-  unit_price: number;
-  total_price: number;
+function getDaysInMonth(year: number, month: number): number {
+  return new Date(year, month, 0).getDate()
 }
 
-interface SaleData {
-  id: string;
-  branch_name: string;
-  branch_slug: string;
-  branch_tin: string;
-  receipt_date: string;
-  receipt_number: string;
-  items: Item[];
-  total_amount: number;
-  status: 'draft' | 'submitted' | 'approved' | 'paid' | 'cancelled';
-  payment_method: 'cash' | 'cheque' | 'gcash';
-}
+// months to display in YYYY-MM format
+const months = ["2025-01", "2025-02", "2025-03"]
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
-interface Metadata {
-  mongodb: {
-    collection: string;
-    database: string;
-  };
-  created_at: string;
-  created_by: string;
-  updated_at: string;
-  updated_by: string;
-  change_history: unknown[];
-}
+export default function DatesPage() {
+  const [selected, setSelected] = useState<string | null>(null)
 
-interface SaleEntry {
-  data: SaleData;
-  metadata: Metadata;
-}
-
-const Page: FC = () => {
-  const [sales, setSales] = useState<SaleEntry[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [progressValue, setProgressValue] = useState(0);
-
-  useEffect(() => {
-    async function fetchSales() {
-      try {
-        const res = await fetch('/api/database/sales/get-sales');
-        const json = await res.json();
-        const fetched: SaleEntry[] = json.sales ?? [];
-        setSales(fetched);
-      } catch (err) {
-        console.error('Failed to fetch sales:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchSales();
-  }, []);
-
-  useEffect(() => {
-    if (!isLoading) return;
-    const interval = setInterval(() => {
-      setProgressValue(prev => (prev >= 100 ? 0 : prev + 10));
-    }, 200);
-    return () => clearInterval(interval);
-  }, [isLoading]);
-
-  const fuse = useMemo(
-    () =>
-      new Fuse<SaleEntry>(sales, {
-        keys: ['data.branch_name', 'data.receipt_number', 'data.status'],
-        threshold: 0.3,
-      }),
-    [sales]
-  );
-
-  const displayedSales = useMemo(
-    () =>
-      searchQuery
-        ? fuse.search(searchQuery).map(r => r.item)
-        : sales,
-    [searchQuery, fuse, sales]
-  );
-
-  const onSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-full flex-col items-center justify-center">
-        <span className="mb-2">Loading sales...</span>
-        <Progress value={progressValue} className="w-1/2" />
-      </div>
-    );
-  }
+  const data = useMemo(() => {
+    return months.map((ym) => {
+      const [year, month] = ym.split("-").map(Number)
+      const title = `${MONTH_NAMES[month - 1]} ${year}`
+      const days = Array.from({ length: getDaysInMonth(year, month) }, (_, i) => i + 1)
+      return { ym, title, year, month, days }
+    })
+  }, [])
 
   return (
-    <div className="p-4 space-y-6">
-<div className="mb-4">
-  {/* Button at top-left */}
-  <div>
-    <Link href="/sales/branches">
-      <Button>
-        <Plus className="mr-2 h-4 w-4" />
-        New Sale from Branches
-      </Button>
-    </Link>
-  </div>
+    <div className="w-screen h-screen p-4 overflow-auto">
+      <h1 className="text-2xl font-bold mb-6 text-center">Calendar View</h1>
 
-  {/* Search input centered below */}
-  <div className="flex justify-center mt-4">
-    <Input
-      placeholder="Search by branch, receipt #, status…"
-      value={searchQuery}
-      onChange={onSearchChange}
-      className="w-full md:w-1/2"
-    />
-  </div>
-</div>
+      {/* responsive grid: 1 col → 2 cols at md (half screen) → 3 cols at lg (full screen) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {data.map(({ ym, title, year, month, days }) => (
+          <section key={ym} className="bg-gray-50 p-4 rounded-lg shadow-sm">
+            <h2 className="text-xl font-semibold mb-2">{title}</h2>
 
+            <div className="grid grid-cols-7 gap-1 mb-1 text-center text-xs font-medium text-gray-600">
+              {WEEKDAYS.map((wd) => <div key={wd}>{wd}</div>)}
+            </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Branch</TableHead>
-            <TableHead>Receipt #</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>Total Amount</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Payment Method</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {displayedSales.map(({ data }) => (
-            <TableRow key={data.id}>
-              <TableCell>{data.branch_name}</TableCell>
-              <TableCell>{data.receipt_number}</TableCell>
-              <TableCell>{data.receipt_date}</TableCell>
-              <TableCell>₱{data.total_amount.toFixed(2)}</TableCell>
-              <TableCell>{data.status}</TableCell>
-              <TableCell>{data.payment_method}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+            <div className="grid grid-cols-7 gap-1">
+              {days.map((day) => {
+                const key = `${ym}-${day}`
+                const isSelected = selected === key
+                const href = `/dates/${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`
+
+                return (
+                  <Link
+                    key={key}
+                    href={href}
+                    className={`flex flex-col justify-between items-start p-2 bg-white border border-gray-200 rounded-lg transition-transform ${
+                      isSelected
+                        ? 'bg-blue-500 text-white scale-110'
+                        : 'hover:shadow hover:bg-gray-100'
+                    }`}
+                    onClick={() => setSelected(key)}
+                  >
+                    <span className="text-sm font-medium">{day}</span>
+                    <span className="text-xs mt-auto">
+                      {isSelected ? 'Selected' : '₱0.00'}
+                    </span>
+                  </Link>
+                )
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
     </div>
-  );
-};
-
-export default Page;
+  )
+}
