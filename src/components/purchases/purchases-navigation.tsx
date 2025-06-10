@@ -23,25 +23,13 @@ export function NavigationMenuDemo() {
         <NavigationMenu viewport={false}>
           <NavigationMenuList className="flex items-center space-x-6">
             <NavigationMenuItem>
-              <NavigationMenuTrigger className={navigationMenuTriggerStyle()}>
-                Departments
-              </NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ul className="grid gap-2 w-56 p-2">
-                  {/* Department links */}
-                  <li>
-                    <Link
-                      href="/departments/electronics"
-                      className="block p-2 hover:bg-gray-100 rounded"
-                    >
-                      Electronics
-                    </Link>
-                  </li>
-                  {/* add more departments here */}
-                </ul>
-              </NavigationMenuContent>
+              <Link
+                href="/purchases"
+                className={navigationMenuTriggerStyle()}
+              >
+                All Purchases
+              </Link>
             </NavigationMenuItem>
-
             <NavigationMenuItem>
               <Link
                 href="/purchases"
@@ -50,9 +38,7 @@ export function NavigationMenuDemo() {
                 Store
               </Link>
             </NavigationMenuItem>
-          </NavigationMenuList>
-        </NavigationMenu>
-
+            <NavigationMenuItem>
         <Link href="/purchases/cart" className="relative">
           <ShoppingCartIcon size={28} />
           {cartCount > 0 && (
@@ -61,6 +47,11 @@ export function NavigationMenuDemo() {
             </span>
           )}
         </Link>
+              </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>
+
+
       </div>
     </header>
   );

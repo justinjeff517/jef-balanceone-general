@@ -1,5 +1,5 @@
 "use client";
-
+import Link from "next/link";
 import React from "react";
 import Image from "next/image";
 import {
@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -87,11 +86,6 @@ const initialCartItems: CartItem[] = [
 
 export default function CartPage() {
   const [cartItems, setCartItems] = React.useState<CartItem[]>(initialCartItems);
-  const [selectedSuppliers, setSelectedSuppliers] = React.useState<Record<string, boolean>>(
-    Object.fromEntries(
-      Array.from(new Set(initialCartItems.map(i => i.supplierName))).map(name => [name, true])
-    )
-  );
 
   const updateQuantity = (id: string, delta: number) =>
     setCartItems(items =>
@@ -110,13 +104,9 @@ export default function CartPage() {
     return acc;
   }, {} as Record<string, { address: string; items: CartItem[] }>);
 
-  // compute totals only for checked suppliers
-  const filteredItems = cartItems.filter(i => selectedSuppliers[i.supplierName]);
-  const totalItems = filteredItems.reduce((s, i) => s + i.quantity, 0);
-  const totalPrice = filteredItems.reduce((s, i) => s + i.price * i.quantity, 0);
-
-  const toggleSupplier = (name: string) =>
-    setSelectedSuppliers(sel => ({ ...sel, [name]: !sel[name] }));
+  // compute totals
+  const totalItems = cartItems.reduce((s, i) => s + i.quantity, 0);
+  const totalPrice = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
 
   return (
     <div className="max-w-4xl mx-auto py-8 space-y-6">
@@ -125,21 +115,13 @@ export default function CartPage() {
       {Object.entries(bySupplier).map(([supplier, { address, items }]) => (
         <Card key={supplier}>
           <CardHeader className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={selectedSuppliers[supplier]}
-                onChange={() => toggleSupplier(supplier)}
-                className="h-4 w-4"
-              />
-              <CardTitle className="text-lg">{supplier}</CardTitle>
-            </div>
+            <CardTitle className="text-lg">{supplier}</CardTitle>
             <span className="text-sm text-gray-500">{address}</span>
           </CardHeader>
 
           <CardContent className="divide-y">
             {items.map(item => (
-              <div key={item.id} className="flex items-center py-4 opacity-70">
+              <div key={item.id} className="flex items-center py-4">
                 <Image
                   src={item.imageUrl!}
                   alt={item.name}
@@ -180,9 +162,9 @@ export default function CartPage() {
           Subtotal ({totalItems} item{totalItems !== 1 ? "s" : ""}):
           <span className="font-semibold ml-2">${totalPrice.toFixed(2)}</span>
         </div>
-        <Button size="lg" disabled={totalItems === 0}>
-          Proceed to Checkout
-        </Button>
+        <Link href="/purchases/cart/checkout">
+          <Button className="text-sm">Proceed to Checkout</Button>
+        </Link>
       </div>
     </div>
   );
