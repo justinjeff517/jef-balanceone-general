@@ -1,291 +1,326 @@
 "use client";
-import React, { useState, useCallback, useMemo } from "react";
-import { useRouter, useParams } from "next/navigation";
+
+import React, { ChangeEvent, useState } from "react";
+import Image from "next/image";
+import { parseISO, format, isValid } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
-
-import {
-  Table,
-  TableHeader,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 
-interface SaleItem {
+interface Product {
   id: string;
   name: string;
-  description: string;
-  quantity: number;
+  description?: string;
+  category?: string;
+  unit: string;
   unit_price: number;
-  total_price: number;
+  imageUrl?: string;
 }
-type ItemDef = Pick<SaleItem, "id" | "name" | "description" | "unit_price">;
 
-const catalog: ItemDef[] = [
-  { id: "1", name: "Wireless Headphones", description: "Bluetooth over-ear", unit_price: 59.99 },
-  { id: "2", name: "Smart Watch",        description: "HR monitor",         unit_price: 129.99 },
-  { id: "3", name: "Portable Speaker",   description: "Waterproof, 12h battery", unit_price: 39.99 },
-  { id: "4", name: "E-Reader",           description: '6" glare-free, 8GB',    unit_price: 79.99 },
-  { id: "5", name: "Wireless Mouse",     description: "Ergonomic, USB-C",   unit_price: 24.99 },
+interface CartItem {
+  id: string;
+  product_id: string;
+  name: string;
+  description?: string;
+  unit: string;
+  unit_price: number;
+  quantity: number;
+  total_price: number;
+  imageUrl?: string;
+}
+
+interface SaleForm {
+  date: string;
+  receiptNumber: string;
+}
+
+const initialProducts: Product[] = [
+  {
+    id: uuidv4(),
+    name: "Coffee Mug",
+    description: "Ceramic coffee mug, 12oz",
+    category: "Office",
+    unit: "piece",
+    unit_price: 5.99,
+    imageUrl: "/images/placeholder.svg",
+  },
+  {
+    id: uuidv4(),
+    name: "A4 Notebook",
+    description: "80-page spiral notebook",
+    category: "Stationery",
+    unit: "piece",
+    unit_price: 3.49,
+    imageUrl: "/images/placeholder.svg",
+  },
+  {
+    id: uuidv4(),
+    name: "Ballpoint Pens (Pack of 10)",
+    description: "Blue ink, medium point",
+    category: "Stationery",
+    unit: "pack",
+    unit_price: 4.25,
+    imageUrl: "/images/placeholder.svg",
+  },
+  {
+    id: uuidv4(),
+    name: "USB-C Cable",
+    description: "3ft USB-C to USB-A cable",
+    category: "Electronics",
+    unit: "piece",
+    unit_price: 8.99,
+    imageUrl: "/images/placeholder.svg",
+  },
+  {
+    id: uuidv4(),
+    name: "Wireless Mouse",
+    description: "2.4GHz wireless optical mouse",
+    category: "Electronics",
+    unit: "piece",
+    unit_price: 24.99,
+    imageUrl: "/images/placeholder.svg",
+  },
 ];
 
-type Branch = { name: string; slug: string; tin: string };
-const dummyBranches: Branch[] = [
-  { name: "Alpha Supply Co.", slug: "alpha-supply",    tin: "123-456-001" },
-  { name: "Bravo Traders",    slug: "bravo-traders",   tin: "123-456-002" },
-  { name: "Charlie Imports",  slug: "charlie-imports", tin: "123-456-003" },
-];
+export default function CartPage() {
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [saleForm, setSaleForm] = useState<SaleForm>({ date: "", receiptNumber: "" });
 
-export default function Page() {
-  const router = useRouter();
-  const params = useParams();
-  const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug || "";
-  const branch = useMemo(
-    () => dummyBranches.find((b) => b.slug === slug) ?? { name: slug, slug, tin: "" },
-    [slug]
+  const branch = {
+    id: uuidv4(),
+    name: "North Branch",
+    slug: "north_branch",
+    tin: "123-456-789",
+    address: "456 Main St, Manila",
+  };
+
+  const availableProducts = initialProducts.filter(
+    p => !cartItems.some(item => item.product_id === p.id)
   );
 
-  // No next-auth: userId is just an empty string
-  const userId = "";
-
-  const [itemMap, setItemMap] = useState<Map<string, SaleItem>>(new Map());
-  const [receiptDate, setReceiptDate] = useState("");
-  const [receiptNumber, setReceiptNumber] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "cheque" | "gcash">("cash");
-  const [touched, setTouched] = useState({ receiptDate: false, receiptNumber: false });
-  const [loading, setLoading] = useState(false);
-
-  const isDateValid = useMemo(() => {
-    if (!receiptDate) return false;
-    const rx = /^\d{4}-\d{2}-\d{2}$/;
-    if (!rx.test(receiptDate)) return false;
-    const d = new Date(receiptDate);
-    return !isNaN(d.getTime()) && d.toISOString().startsWith(receiptDate);
-  }, [receiptDate]);
-
-  const isNumberValid = useMemo(() => /^\d+$/.test(receiptNumber), [receiptNumber]);
-  const items = useMemo(() => Array.from(itemMap.values()), [itemMap]);
-  const total = useMemo(() => items.reduce((s, it) => s + it.total_price, 0), [items]);
-  const isFormValid = isDateValid && isNumberValid && items.length > 0;
-
-  const addItem = useCallback((def: ItemDef) => {
-    setItemMap((m) => {
-      const next = new Map(m);
-      const ex = next.get(def.id);
-      if (ex) {
-        const q = ex.quantity + 1;
-        next.set(def.id, { ...ex, quantity: q, total_price: +(q * ex.unit_price).toFixed(2) });
-      } else {
-        next.set(def.id, {
-          id: def.id,
-          name: def.name,
-          description: def.description,
-          unit_price: def.unit_price,
-          quantity: 1,
-          total_price: +def.unit_price.toFixed(2),
-        });
-      }
-      return next;
-    });
-  }, []);
-
-  const removeItem = useCallback((id: string) => {
-    setItemMap((m) => {
-      const next = new Map(m);
-      next.delete(id);
-      return next;
-    });
-  }, []);
-
-  const updateQuantity = useCallback((id: string, qty: number) => {
-    setItemMap((m) => {
-      const next = new Map(m);
-      const ex = next.get(id);
-      if (!ex) return next;
-      const q = Math.max(1, isNaN(qty) ? 1 : qty);
-      next.set(id, { ...ex, quantity: q, total_price: +(q * ex.unit_price).toFixed(2) });
-      return next;
-    });
-  }, []);
-
-  const available = useMemo(() => catalog.filter((d) => !itemMap.has(d.id)), [itemMap]);
-
-  const handleSubmit = async () => {
-    if (!isFormValid) return;
-    setLoading(true);
-
-    // auto-generate summaries
-    const summaryText = `Sale of ${items.length} item(s) totaling $${total.toFixed(
-      2
-    )} at ${branch.name} on ${receiptDate}.`;
-    const itemsSummary = items
-      .map((it) => `• ${it.name} x${it.quantity} ($${it.total_price.toFixed(2)})`)
-      .join("\n");
-    const lastChangeSummary = "Initial creation";
-
-    const payload = {
-      collection: "sales" as const,
+  const addToCart = (product: Product, qty = 1) => {
+    const newItem: CartItem = {
       id: uuidv4(),
-      branch_name: branch.name,
-      branch_slug: branch.slug,
-      branch_tin: branch.tin,
-      receipt_date: receiptDate,
-      receipt_number: receiptNumber,
-      items,
-      total_amount: total,
-      status: "submitted" as const,
-      payment_method: paymentMethod,
-      created_at: new Date().toISOString(),
-      created_by: userId,
-      change_history: [] as any[],
-      e_signature: {
-        signed_by: userId,
-        signed_at: new Date().toISOString(),
-        signature_reason: "submission" as const,
-        signature_hash: "", // ← fill or compute on backend
-      },
-      summary_text: summaryText,
-      items_summary: itemsSummary,
-      last_change_summary: lastChangeSummary,
+      product_id: product.id,
+      name: product.name,
+      description: product.description,
+      unit: product.unit,
+      unit_price: product.unit_price,
+      quantity: qty,
+      total_price: product.unit_price * qty,
+      imageUrl: product.imageUrl,
     };
-
-    console.log("→ payload:", JSON.stringify(payload, null, 2));
-    // TODO: replace with real API call
-    await new Promise((r) => setTimeout(r, 800));
-    router.push("/sales");
+    setCartItems(prev => [...prev, newItem]);
   };
+
+  const updateQuantity = (id: string, delta: number) => {
+    setCartItems(items =>
+      items.map(item =>
+        item.id === id
+          ? {
+              ...item,
+              quantity: Math.max(1, item.quantity + delta),
+              total_price: item.unit_price * Math.max(1, item.quantity + delta),
+            }
+          : item
+      )
+    );
+  };
+
+  const removeItem = (id: string) => {
+    setCartItems(items => items.filter(item => item.id !== id));
+  };
+
+  const handleFormChange = (field: keyof SaleForm, e: ChangeEvent<HTMLInputElement>) => {
+    setSaleForm(prev => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const handleSubmitSale = () => {
+    const errors: string[] = [];
+    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+
+    if (!saleForm.date) errors.push("Missing Date");
+    else if (!datePattern.test(saleForm.date) || !isValid(parseISO(saleForm.date)))
+      errors.push("Invalid Date");
+    if (!saleForm.receiptNumber) errors.push("Missing Receipt Number");
+
+    if (errors.length) {
+      alert("Please fix before submitting:\n" + errors.join("\n"));
+      return;
+    }
+
+    const total = cartItems.reduce((sum, i) => sum + i.total_price, 0);
+    console.log({
+      branch: branch.slug,
+      sale_date: saleForm.date,
+      receipt_number: saleForm.receiptNumber,
+      items: cartItems,
+      total_amount: total,
+    });
+    alert("Sale submitted successfully!");
+  };
+
+  const humanizedDate =
+    saleForm.date && isValid(parseISO(saleForm.date))
+      ? format(parseISO(saleForm.date), "PPP")
+      : "";
+
+  const totalAmount = cartItems.reduce((sum, i) => sum + i.total_price, 0);
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold mb-2">Sale at {branch.name}</h1>
-      <p className="mb-4 text-gray-600">TIN: {branch.tin}</p>
+      <div className="max-w-5xl mx-auto space-y-8">
 
-      <section className="mb-8">
-        <h2 className="font-medium mb-2">Add Items</h2>
-        {available.length === 0 ? (
-          <p>All items added.</p>
-        ) : (
-          <div className="space-y-2">
-            {available.map((d) => (
-              <Card key={d.id}>
-                <CardContent className="flex items-center p-2 space-x-3">
-                  <Button size="sm" onClick={() => addItem(d)}>
-                    Add
-                  </Button>
-                  <span className="font-medium">{d.name}</span>
-                  <p className="text-sm text-gray-500 flex-1 truncate">{d.description}</p>
-                  <span className="font-semibold">${d.unit_price.toFixed(2)}</span>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
 
-      <section className="mb-8">
-        <h2 className="font-medium mb-2">Items ({items.length})</h2>
-        {items.length === 0 ? (
-          <p>No items.</p>
-        ) : (
-          <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Unit Price</TableHead>
-                  <TableHead>Qty</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((it) => (
-                  <TableRow key={it.id}>
-                    <TableCell>{it.name}</TableCell>
-                    <TableCell>${it.unit_price.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        value={it.quantity}
-                        min={1}
-                        onChange={(e) => updateQuantity(it.id, parseInt(e.target.value, 10))}
-                        className="w-20"
-                      />
-                    </TableCell>
-                    <TableCell>${it.total_price.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => removeItem(it.id)}>
-                        <Trash2 className="h-4 w-4" />
+        {/* Cart */}
+        <div>
+        {/* Add Products Modal */}
+        <div className="p-6">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline">Add Products</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Select Products</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4">
+                {availableProducts.length === 0 ? (
+                  <p className="text-center text-gray-500">All products added.</p>
+                ) : (
+                  availableProducts.map(product => (
+                    <div
+                      key={product.id}
+                      className="flex justify-between items-center p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div>
+                        <h3 className="font-semibold">{product.name}</h3>
+                        <p className="text-sm text-gray-600">
+                          ${product.unit_price.toFixed(2)} / {product.unit}
+                        </p>
+                      </div>
+                      <Button size="sm" onClick={() => addToCart(product, 1)}>
+                        Add
                       </Button>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                  ))
+                )}
+              </div>
+              <DialogFooter>
+                <DialogClose>Close</DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+          {cartItems.length === 0 ? (
+            <p className="p-6 text-center text-gray-500">Your cart is empty.</p>
+          ) : (
+            <Card>
+              <CardContent className="divide-y">
+                {cartItems.map(item => (
+                  <div
+                    key={item.id}
+                    className="flex items-center py-4 px-6 hover:bg-gray-50 transition-colors"
+                  >
+                    <Image
+                      src={item.imageUrl!}
+                      alt={item.name}
+                      width={100}
+                      height={100}
+                      className="rounded-lg object-cover"
+                    />
+                    <div className="flex-1 ml-6">
+                      <h3 className="text-base font-medium">{item.name}</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        ${item.unit_price.toFixed(2)} / {item.unit}
+                      </p>
+                      <div className="mt-3 flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateQuantity(item.id, -1)}
+                        >
+                          –
+                        </Button>
+                        <span className="w-6 text-center">{item.quantity}</span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateQuantity(item.id, 1)}
+                        >
+                          +
+                        </Button>
+                        <Button
+                          variant="link"
+                          className="text-sm text-red-500"
+                          onClick={() => removeItem(item.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="text-right ml-4 w-24">
+                      <span className="text-lg font-semibold">
+                        ${item.total_price.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
-            <div className="mt-2 text-right font-semibold">Total: ${total.toFixed(2)}</div>
-          </>
-        )}
-      </section>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div>
-          <label htmlFor="receiptDate" className="block mb-1">
-            Receipt Date
-          </label>
-          <Input
-            id="receiptDate"
-            placeholder="YYYY-MM-DD"
-            value={receiptDate}
-            onChange={(e) => setReceiptDate(e.target.value)}
-            onBlur={() => setTouched((t) => ({ ...t, receiptDate: true }))}
-          />
-          {touched.receiptDate && !isDateValid && (
-            <p className="text-red-500 text-sm">Invalid date.</p>
+                {/* Sale date & receipt */}
+                <div className="flex flex-wrap gap-6 pt-6 px-6">
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="block text-sm font-medium mb-1">Date</label>
+                    <Input
+                      name="date"
+                      value={saleForm.date}
+                      onChange={e => handleFormChange("date", e)}
+                      placeholder="YYYY-MM-DD"
+                      className="w-full"
+                    />
+                    {humanizedDate && (
+                      <p className="mt-1 text-sm text-gray-500">{humanizedDate}</p>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="block text-sm font-medium mb-1">
+                      Receipt Number
+                    </label>
+                    <Input
+                      name="receiptNumber"
+                      value={saleForm.receiptNumber}
+                      onChange={e => handleFormChange("receiptNumber", e)}
+                      placeholder="ABC-12345"
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between items-center px-6 py-4">
+                <span className="text-lg font-medium">
+                  Total: ${totalAmount.toFixed(2)}
+                </span>
+              </CardFooter>
+            </Card>
           )}
         </div>
 
-        <div>
-          <label htmlFor="receiptNumber" className="block mb-1">
-            Receipt #
-          </label>
-          <Input
-            id="receiptNumber"
-            placeholder="12345"
-            value={receiptNumber}
-            onChange={(e) => setReceiptNumber(e.target.value.replace(/\D/g, ""))}
-            onBlur={() => setTouched((t) => ({ ...t, receiptNumber: true }))}
-          />
-          {touched.receiptNumber && !isNumberValid && (
-            <p className="text-red-500 text-sm">Must be numeric.</p>
-          )}
+        {/* Submit */}
+        <div className="flex justify-end">
+          <Button size="lg" onClick={handleSubmitSale}>
+            Submit Sale
+          </Button>
         </div>
-
-        <div>
-          <label htmlFor="paymentMethod" className="block mb-1">
-            Payment Method
-          </label>
-          <select
-            id="paymentMethod"
-            value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value as any)}
-            className="border px-2 py-1 rounded w-full"
-          >
-            <option value="cash">Cash</option>
-            <option value="cheque">Cheque</option>
-            <option value="gcash">GCash</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="text-right">
-        <Button onClick={handleSubmit} disabled={!isFormValid || loading}>
-          {loading ? "Submitting..." : "Submit"}
-        </Button>
       </div>
     </div>
   );

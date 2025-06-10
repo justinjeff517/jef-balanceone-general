@@ -1,37 +1,23 @@
-import * as React from "react"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar"
-
+"use client";
+import * as React from "react";
+import { SalesNavigation } from "@/components/sales/sales-navigation";
   
-export default function SalesLayout({
-    children,
-  }: {
-    children: React.ReactNode
-  }) {
-    return (
+export default function PurchasingLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="min-h-screen bg-white">
+      {/* solid, sticky navbar */}
+      <nav className="sticky top-0 z-50 bg-white shadow">
+        <SalesNavigation />
+      </nav>
 
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="p-4">
-            {children}
-        </div>
- 
-      </SidebarInset>
-    </SidebarProvider>
-    )
-
-
-  }
+      {/* page content */}
+      <main className="p-4">
+        {children}
+      </main>
+    </div>
+  );
+}

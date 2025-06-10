@@ -66,14 +66,6 @@
         "total_amount": {
           "type": "number",
           "minimum": 0
-        },
-        "status": {
-          "type": "string",
-          "enum": ["draft", "submitted", "approved", "paid", "cancelled"]
-        },
-        "payment_method": {
-          "type": "string",
-          "enum": ["cash", "cheque", "gcash"]
         }
       }
     },
