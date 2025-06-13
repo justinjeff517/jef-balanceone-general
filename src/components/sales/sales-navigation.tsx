@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import React from "react";
 import {
   NavigationMenu,
   NavigationMenuList,
@@ -12,7 +11,6 @@ import {
   NavigationMenuLink,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-import { ShoppingCartIcon } from "lucide-react";
 
 const branches = [
   {
@@ -71,7 +69,10 @@ function ListItem({
   return (
     <li>
       <NavigationMenuLink asChild>
-        <Link href={href} className="block p-3 rounded-md no-underline hover:bg-gray-100">
+        <Link
+          href={href}
+          className="block p-3 rounded-md no-underline hover:bg-gray-100"
+        >
           <div className="text-sm font-medium">{title}</div>
           <p className="text-xs text-gray-600">{tin}</p>
           <p className="text-xs text-gray-600 line-clamp-2">{address}</p>
@@ -82,17 +83,33 @@ function ListItem({
 }
 
 export function SalesNavigation() {
-  const pathname = usePathname();
-  const [cartCount] = useState(3);
-
   return (
     <header className="w-full bg-white shadow">
       <div className="max-w-4xl mx-auto flex items-center justify-between px-4 py-2">
         <NavigationMenu viewport={false}>
           <NavigationMenuList className="flex items-center space-x-4">
+            {/* Home as a plain link */}
+            <NavigationMenuItem>
+              <NavigationMenuLink asChild>
+                <Link
+                  href="/"
+                  className={
+                    navigationMenuTriggerStyle() +
+                    " transform transition hover:scale-105"
+                  }
+                >
+                  Home
+                </Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+
+            {/* Branches with dropdown */}
             <NavigationMenuItem>
               <NavigationMenuTrigger
-                className={navigationMenuTriggerStyle() + " transform transition hover:scale-105"}
+                className={
+                  navigationMenuTriggerStyle() +
+                  " transform transition hover:scale-105"
+                }
               >
                 Branches
               </NavigationMenuTrigger>
@@ -112,18 +129,6 @@ export function SalesNavigation() {
             </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
-
-        <Link
-          href="/purchases/cart"
-          className="relative transform transition hover:scale-110"
-        >
-          <ShoppingCartIcon size={28} />
-          {cartCount > 0 && (
-            <span className="absolute -top-1 -right-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-medium text-white">
-              {cartCount}
-            </span>
-          )}
-        </Link>
       </div>
     </header>
   );

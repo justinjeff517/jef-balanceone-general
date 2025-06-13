@@ -27,7 +27,7 @@ interface Product {
   branch_name: string;
   branch_slug: string;
   active: boolean;
-  imageUrl: string;   // now required, we’ll default it
+  imageUrl: string;
 }
 
 interface SalesItem {
@@ -55,16 +55,21 @@ export default function Page() {
   const [SalesItems, setSalesItems] = useState<SalesItem[]>([]);
   const [saleForm, setSaleForm] = useState<SaleForm>({ date: "", receiptNumber: "" });
 
+  // load products for branch
   useEffect(() => {
     if (!branchSlug) return;
     setLoading(true);
-    fetch(`/api/database/products/get-products-by-branch-slug?branch_slug=${encodeURIComponent(branchSlug)}`, { cache: "no-store" })
-      .then(res => {
+    fetch(
+      `/api/database/products/get-products-by-branch-slug?branch_slug=${encodeURIComponent(
+        branchSlug
+      )}`,
+      { cache: "no-store" }
+    )
+      .then((res) => {
         if (!res.ok) throw new Error(`Status ${res.status}`);
         return res.json();
       })
-      .then(data => {
-        // flatten the API shape into Product[]
+      .then((data) => {
         const flat: Product[] = data.products.map((p: any) => ({
           ...p.data,
           imageUrl: "/images/placeholder.svg",
@@ -72,16 +77,33 @@ export default function Page() {
         setProducts(flat);
         setError(null);
       })
-      .catch(err => setError(err.message))
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [branchSlug]);
 
+  // on mount, rehydrate cart from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("cart");
+    if (saved) {
+      try {
+        setSalesItems(JSON.parse(saved));
+      } catch {
+        localStorage.removeItem("cart");
+      }
+    }
+  }, []);
+
+  // persist cart to localStorage
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(SalesItems));
+  }, [SalesItems]);
+
   const availableProducts = products.filter(
-    p => !SalesItems.some(item => item.product_id === p.id)
+    (p) => !SalesItems.some((item) => item.product_id === p.id)
   );
 
   const addToCart = (product: Product, qty = 1) => {
-    setSalesItems(prev => [
+    setSalesItems((prev) => [
       ...prev,
       {
         id: uuidv4(),
@@ -97,8 +119,8 @@ export default function Page() {
   };
 
   const updateQuantity = (id: string, delta: number) => {
-    setSalesItems(items =>
-      items.map(item =>
+    setSalesItems((items) =>
+      items.map((item) =>
         item.id === id
           ? {
               ...item,
@@ -111,12 +133,12 @@ export default function Page() {
   };
 
   const removeItem = (id: string) =>
-    setSalesItems(items => items.filter(item => item.id !== id));
+    setSalesItems((items) => items.filter((item) => item.id !== id));
 
   const handleFormChange = (field: keyof SaleForm, e: ChangeEvent<HTMLInputElement>) =>
-    setSaleForm(prev => ({ ...prev, [field]: e.target.value }));
+    setSaleForm((prev) => ({ ...prev, [field]: e.target.value }));
 
-  const handleSubmitSale = () => {
+  const handleSubmitSale = async () => {
     const errs: string[] = [];
     const dateRx = /^\d{4}-\d{2}-\d{2}$/;
     if (!saleForm.date) errs.push("Missing Date");
@@ -127,9 +149,35 @@ export default function Page() {
       alert("Fix:\n" + errs.join("\n"));
       return;
     }
-    const total = SalesItems.reduce((s, i) => s + i.total_price, 0);
-    console.log({ branch: branchSlug, sale_date: saleForm.date, receipt_number: saleForm.receiptNumber, items: SalesItems, total_amount: total });
-    alert("Sale submitted!");
+
+    const payload = {
+      branch_name: products[0]?.branch_name || "",
+      branch_slug: branchSlug,
+     // branch_tin: /* yourBranchTinState */,
+      receipt_date: saleForm.date,
+      receipt_number: saleForm.receiptNumber,
+      is_submitted: false,
+      items: SalesItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        unit: item.unit,
+        unit_price: item.unit_price,
+        quantity: item.quantity,
+        total_price: item.total_price,
+      })),
+    };
+
+    try {
+      //console log
+      //dont submit using api yet
+      console.log("Posting sale to API", payload);
+      //const res = await fetch("/api/database/sales/add-sale", { method: "POST", body: JSON.stringify(payload) }); // TODO: call API endpoint to add sale
+      //reset cart
+      setSalesItems([]);
+    }
+    catch (err) {
+      alert("Error adding sale: " + err);
+    }
   };
 
   const humanizedDate =
@@ -159,7 +207,7 @@ export default function Page() {
               ) : availableProducts.length === 0 ? (
                 <p className="text-center text-gray-500">None left.</p>
               ) : (
-                availableProducts.map(p => (
+                availableProducts.map((p) => (
                   <div
                     key={p.id}
                     className="flex justify-between items-center p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
@@ -190,7 +238,7 @@ export default function Page() {
       ) : (
         <Card>
           <CardContent className="divide-y">
-            {SalesItems.map(item => (
+            {SalesItems.map((item) => (
               <div
                 key={item.id}
                 className="flex items-center py-4 px-6 hover:bg-gray-50 transition-colors"
@@ -208,14 +256,26 @@ export default function Page() {
                     ₱{item.unit_price.toFixed(2)} / {item.unit}
                   </p>
                   <div className="mt-3 flex items-center space-x-2">
-                    <Button variant="outline" size="icon" onClick={() => updateQuantity(item.id, -1)}>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => updateQuantity(item.id, -1)}
+                    >
                       –
                     </Button>
                     <span className="w-6 text-center">{item.quantity}</span>
-                    <Button variant="outline" size="icon" onClick={() => updateQuantity(item.id, 1)}>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => updateQuantity(item.id, 1)}
+                    >
                       +
                     </Button>
-                    <Button variant="link" className="text-sm text-red-500" onClick={() => removeItem(item.id)}>
+                    <Button
+                      variant="link"
+                      className="text-sm text-red-500"
+                      onClick={() => removeItem(item.id)}
+                    >
                       Delete
                     </Button>
                   </div>
@@ -235,18 +295,22 @@ export default function Page() {
                 <Input
                   name="date"
                   value={saleForm.date}
-                  onChange={e => handleFormChange("date", e)}
+                  onChange={(e) => handleFormChange("date", e)}
                   placeholder="YYYY-MM-DD"
                   className="w-full"
                 />
-                {humanizedDate && <p className="mt-1 text-sm text-gray-500">{humanizedDate}</p>}
+                {humanizedDate && (
+                  <p className="mt-1 text-sm text-gray-500">{humanizedDate}</p>
+                )}
               </div>
               <div className="flex-1 min-w-[200px]">
-                <label className="block text-sm font-medium mb-1">Receipt Number</label>
+                <label className="block text-sm font-medium mb-1">
+                  Receipt Number
+                </label>
                 <Input
                   name="receiptNumber"
                   value={saleForm.receiptNumber}
-                  onChange={e => handleFormChange("receiptNumber", e)}
+                  onChange={(e) => handleFormChange("receiptNumber", e)}
                   placeholder="ABC-12345"
                   className="w-full"
                 />
@@ -262,8 +326,12 @@ export default function Page() {
       )}
 
       {/* Submit */}
-      <div className="flex justify-end">
-        <Button size="lg" onClick={handleSubmitSale}>
+      <div className="flex justify-end mr-10">
+        <Button
+     
+          onClick={handleSubmitSale}
+          disabled={SalesItems.length === 0}
+        >
           Submit Sale
         </Button>
       </div>
