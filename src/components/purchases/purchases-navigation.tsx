@@ -1,58 +1,68 @@
 "use client";
 
-import React from "react";
+import React, { FC } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   NavigationMenu,
   NavigationMenuList,
   NavigationMenuItem,
-  NavigationMenuTrigger,
-  NavigationMenuContent,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-import { ShoppingCartIcon } from "lucide-react";
 
-export function NavigationMenuDemo() {
+interface IndexPillProps {
+  number: number;
+}
+
+const IndexPill: FC<IndexPillProps> = ({ number }) => (
+  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-800">
+    {number}
+  </span>
+);
+
+export const NavigationMenuDemo: FC = () => {
   const pathname = usePathname();
-  const [cartCount] = React.useState(3);
+  const [cartCount] = React.useState<number>(3);
 
   return (
     <header className="w-full bg-white shadow">
       <div className="max-w-4xl mx-auto flex items-center justify-center space-x-6 px-4 py-2">
         <NavigationMenu viewport={false}>
           <NavigationMenuList className="flex items-center space-x-6">
+
+
             <NavigationMenuItem>
               <Link
-                href="/purchases"
-                className={navigationMenuTriggerStyle()}
+                href="/purchases/create"
+                className={`${navigationMenuTriggerStyle()} flex items-center`}
               >
-                All Purchases
+                Create Purchases
+                <IndexPill number={3} />
               </Link>
             </NavigationMenuItem>
+
             <NavigationMenuItem>
               <Link
-                href="/purchases"
-                className={navigationMenuTriggerStyle()}
+                href="/purchases/accounting"
+                className={`${navigationMenuTriggerStyle()} flex items-center`}
               >
-                Store
+                Unprocessed Purchases
+                <IndexPill number={3} />
               </Link>
             </NavigationMenuItem>
-            <NavigationMenuItem>
-        <Link href="/purchases/cart" className="relative">
-          <ShoppingCartIcon size={28} />
-          {cartCount > 0 && (
-            <span className="absolute -top-1 -right-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-medium text-white">
-              {cartCount}
-            </span>
-          )}
-        </Link>
-              </NavigationMenuItem>
+                <NavigationMenuItem>
+              <Link
+                href="/purchases/accounting"
+                className={`${navigationMenuTriggerStyle()} flex items-center`}
+              >
+                Processed Purchases
+                <IndexPill number={3} />
+              </Link>
+            </NavigationMenuItem>
+              
           </NavigationMenuList>
         </NavigationMenu>
-
-
       </div>
     </header>
   );
-}
+};
