@@ -39,6 +39,7 @@ interface Item {
 
 interface Data {
   id: string;
+  is_submitted: boolean;
   branch_name: string;
   branch_slug: string;
   branch_tin: string;
@@ -46,44 +47,14 @@ interface Data {
   receipt_number: string;
   items: Item[];
   total_amount: number;
-  status: "draft" | "submitted" | "approved" | "paid" | "cancelled";
-  payment_method: "cash" | "cheque" | "gcash";
-  created_at: string;
-  created_by: string;
-}
-
-interface Change {
-  field: string;
-  old: null | string | number | boolean | any[];
-  new: null | string | number | boolean | any[];
-}
-
-interface ChangeHistoryEntry {
-  timestamp: string;
-  user_id: string;
-  changes: Change[];
-}
-
-interface Metadata {
-  mongodb: {
-    collection: "sales";
-    database: "jef-balanceone-general";
-  };
-  created_at: string;
-  created_by: string;
-  updated_at: string;
-  updated_by: string;
-  change_history: ChangeHistoryEntry[];
 }
 
 interface SaleRecord {
   data: Data;
-  metadata: Metadata;
 }
 
 export default function Page() {
-  const params = useParams();
-  const rawSlug = params.slug;
+  const { slug: rawSlug } = useParams();
   const slug = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug ?? "";
 
   const [sales, setSales] = useState<SaleRecord[]>([]);
@@ -99,16 +70,14 @@ export default function Page() {
         )}`
       );
       if (res.ok) {
-        const json = await res.json();
-        setSales(json.sales);
+        const { sales } = await res.json();
+        setSales(sales);
       } else {
         setSales([]);
       }
       setLoading(false);
     }
-    if (slug) {
-      fetchSales();
-    }
+    if (slug) fetchSales();
   }, [slug]);
 
   const fuse = useMemo(
@@ -122,14 +91,12 @@ export default function Page() {
 
   const filteredSales = useMemo(() => {
     if (!search.trim()) return sales;
-    return fuse.search(search).map((result) => result.item);
+    return fuse.search(search).map((r) => r.item);
   }, [search, fuse, sales]);
 
   const branchName = sales[0]?.data.branch_name ?? slug;
 
-  if (loading) {
-    return <p className="text-center">Loading…</p>;
-  }
+  if (loading) return <p className="text-center">Loading…</p>;
 
   return (
     <div>
@@ -173,10 +140,9 @@ export default function Page() {
             <TableRow>
               <TableHead>Date</TableHead>
               <TableHead>Receipt #</TableHead>
-              <TableHead>Payment</TableHead>
+              <TableHead>Submitted</TableHead>
+              <TableHead>TIN</TableHead>
               <TableHead>Total</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created At</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -185,12 +151,11 @@ export default function Page() {
               <TableRow key={s.data.id}>
                 <TableCell>{s.data.receipt_date}</TableCell>
                 <TableCell>{s.data.receipt_number}</TableCell>
-                <TableCell>{s.data.payment_method}</TableCell>
-                <TableCell>${s.data.total_amount.toFixed(2)}</TableCell>
-                <TableCell>{s.data.status}</TableCell>
                 <TableCell>
-                  {new Date(s.data.created_at).toLocaleString()}
+                  {s.data.is_submitted ? "Yes" : "No"}
                 </TableCell>
+                <TableCell>{s.data.branch_tin}</TableCell>
+                <TableCell>${s.data.total_amount.toFixed(2)}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

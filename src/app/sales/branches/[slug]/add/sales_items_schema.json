@@ -1,7 +1,14 @@
 {
-  "schema": [
-    {
-      "data": {
+  "schema":{
+"data":{
+  "branch_slug": {
+    "type": "string"
+  },
+  "items": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
         "id": {
           "type": "string",
           "format": "uuid"
@@ -10,15 +17,12 @@
           "type": "string",
           "minLength": 1
         },
-        "slug": {
-          "type": "string",
-          "pattern": "^[a-z0-9_-]+$"
-        },
         "description": {
           "type": "string"
         },
-        "category": {
-          "type": "string"
+        "quantity": {
+          "type": "integer",
+          "minimum": 0
         },
         "unit": {
           "type": "string",
@@ -28,21 +32,16 @@
           "type": "number",
           "minimum": 0
         },
-        "active": {
-          "type": "boolean",
-          "default": true
-        },
-        "supplier_id": {
-          "type": "string",
-          "format": "uuid"
-        },
-        "supplier_name": {
-          "type": "string"
+        "total_price": {
+          "type": "number",
+          "minimum": 0
         }
-      }
+      },
+      "required": ["id", "name", "quantity", "unit_price", "total_price"],
+      "additionalProperties": false
     }
-  ]
+  }
 }
-
-
-
+    }
+  
+}
